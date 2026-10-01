@@ -3,22 +3,25 @@
 import { PluginLifecycle } from './pluginLifecycle';
 import { CapabilityRegistry } from './capabilityRegistry';
 import { EventBus } from './eventBus';
+import { LocalDatabase } from '../persistence/database';
 
 export class PluginSDK {
   private capabilities: { [key: string]: any } = {};
   private eventBus: EventBus;
   private capabilityRegistry: CapabilityRegistry;
+  private db: LocalDatabase;
 
-  constructor(eventBus: EventBus, capabilityRegistry: CapabilityRegistry) {
+  constructor(eventBus: EventBus, capabilityRegistry: CapabilityRegistry, db: LocalDatabase) {
     this.eventBus = eventBus;
     this.capabilityRegistry = capabilityRegistry;
+    this.db = db;
   }
 
   registerPlugin(plugin: { id: string; name: string; version: string; entrypoint: string }): void {
     console.log(`Registering plugin: ${plugin.name} v${plugin.version}`);
     
     // Plugin-Registrierung in der Datenbank
-    db.savePlugin(plugin);
+    this.db.savePlugin(plugin);
     
     // Plugin Lifecycle aktualisieren
     PluginLifecycle.setState(LifecycleState.Loaded);
@@ -48,10 +51,10 @@ export class PluginSDK {
   } {
     return {
       async save(key: string, value: any): Promise<void> {
-        await db.saveSetting(`${namespace}-${key}`, JSON.stringify(value));
+        await this.db.saveSetting(`${namespace}-${key}`, JSON.stringify(value));
       },
       async load(key: string): Promise<any | null> {
-        const value = await db.getSetting(`${namespace}-${key}`);
+        const value = await this.db.getSetting(`${namespace}-${key}`);
         return value ? JSON.parse(value) : null;
       }
     };
@@ -92,6 +95,11 @@ export class PluginSDK {
     console.log(`Plugin ${plugin.name} validated successfully`);
     return true;
   }
+
+  async getPlugins(): Promise<Array<{ id: string; name: string; version: string }>> {
+    const plugins = await this.db.listPlugins();
+    return plugins;
+  }
 }
 
-const pluginSdk = new PluginSDK(EventBus, CapabilityRegistry);
+const pluginSdk = new PluginSDK(EventBus, CapabilityRegistry, db);
