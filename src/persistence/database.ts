@@ -70,6 +70,11 @@ export class LocalDatabase {
     const row = await this.db.get('SELECT * FROM lastKnownGood WHERE pluginId = ?', [pluginId]);
     return row ? { version: row.version } : null;
   }
+
+  async listPlugins(): Promise<Array<{ id: string; name: string; version: string; entrypoint: string }>> {
+    const rows = await this.db.all('SELECT * FROM plugins');
+    return rows;
+  }
 }
 
 const db = new LocalDatabase();

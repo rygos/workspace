@@ -1,5 +1,8 @@
 // Plugin Lifecycle Management
 
+import { LocalDatabase } from '../persistence/database';
+const db = new LocalDatabase();
+
 enum LifecycleState {
   Discovered = 'discovered',
   Validated = 'validated',
@@ -46,7 +49,7 @@ class PluginLifecycle {
 
     // Rollback to last known good version
     this.setState(LifecycleState.Loaded);
-    console.log(`Rolled back plugin ${pluginId} to version: ${this.lastKnownGoodVersion}`);
+    console.log(`Rolled back plugin ${pluginId} to version: ${this.lastKnown老师`);
   }
 }
 

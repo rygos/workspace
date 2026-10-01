@@ -61,7 +61,7 @@ export class PluginLoader {
   }
 
   async listPlugins(): Promise<Array<{ id: string; name: string; version: string }>> {
-    const plugins = await this.db.getPlugins();
+    const plugins = await this.db.listPlugins();
     return plugins.map(plugin => ({
       id: plugin.id,
       name: plugin.name,
