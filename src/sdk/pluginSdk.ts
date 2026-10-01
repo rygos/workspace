@@ -18,6 +18,11 @@ export class PluginSDK {
   }
 
   registerPlugin(plugin: { id: string; name: string; version: string; entrypoint: string }): void {
+    // Validate plugin data before registration
+    if (!plugin.id || !plugin.name || !plugin.version || !plugin.entrypoint) {
+      throw new Error('Invalid plugin data. All fields (id, name, version, entrypoint) are required.');
+    }
+
     console.log(`Registering plugin: ${plugin.name} v${plugin.version}`);
     
     // Plugin-Registrierung in der Datenbank
@@ -42,7 +47,7 @@ export class PluginSDK {
   }
 
   emitEvent(eventType: string, data: any): void {
-    this.eventBus.emit(eventType, data);
+    this.event_bus.emit(eventType, data);
   }
 
   getStorage(namespace: string): { 
@@ -98,7 +103,11 @@ export class PluginSDK {
 
   async getPlugins(): Promise<Array<{ id: string; name: string; version: string }>> {
     const plugins = await this.db.listPlugins();
-    return plugins;
+    return plugins.map(plugin => ({
+      id: plugin.id,
+      name: plugin.name,
+      version: plugin.version
+    }));
   }
 }
 

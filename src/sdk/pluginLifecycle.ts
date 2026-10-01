@@ -49,7 +49,7 @@ class PluginLifecycle {
 
     // Rollback to last known good version
     this.setState(LifecycleState.Loaded);
-    console.log(`Rolled back plugin ${pluginId} to version: ${this.lastKnown老师`);
+    console.log(`Rolled back plugin ${pluginId} to version: ${this.lastKnownGoodVersion}`);
   }
 }
 
