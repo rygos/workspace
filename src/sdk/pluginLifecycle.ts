@@ -20,7 +20,7 @@ class PluginLifecycle {
     console.log(`Plugin lifecycle changed to: ${newState}`);
   }
 
-  getState(): Lifecycle州 {
+  getState(): LifecycleState {
     return this.state;
   }
 }

@@ -1,22 +1,33 @@
 // Plugin-SDK mit erweiterten APIs
 
+import { PluginLifecycle } from './pluginLifecycle';
+import { CapabilityRegistry } from './capabilityRegistry';
+import { EventBus } from './eventBus';
+
 export class PluginSDK {
   private capabilities: { [key: string]: any } = {};
   private eventBus: EventBus;
+  private capabilityRegistry: CapabilityRegistry;
 
-  constructor(eventBus: EventBus) {
+  constructor(eventBus: EventBus, capabilityRegistry: CapabilityRegistry) {
     this.eventBus = eventBus;
+    this.capabilityRegistry = capabilityRegistry;
   }
 
   registerPlugin(plugin: { id: string; name: string; version: string; entrypoint: string }): void {
     console.log(`Registering plugin: ${plugin.name} v${plugin.version}`);
+    
     // Plugin-Registrierung in der Datenbank
     db.savePlugin(plugin);
+    
+    // Plugin Lifecycle aktualisieren
+    PluginLifecycle.setState(LifecycleState.Loaded);
   }
 
   registerCapability(name: string, capability: any): void {
     this.capabilities[name] = capability;
     console.log(`Registered capability: ${name}`);
+    this.capabilityRegistry.register(name, capability);
   }
 
   getCapability(name: string): any {
@@ -62,8 +73,25 @@ export class PluginSDK {
 
   reportHealth(status: 'healthy' | 'degraded' | 'failed'): void {
     console.log(`Plugin health reported as: ${status}`);
-    // Hier könnte der Plugin-Lifecycle aktualisiert werden
+    
+    // Plugin Lifecycle aktualisieren
+    if (status === 'degraded') {
+      PluginLifecycle.setState(LifecycleState.Degraded);
+    } else if (status === 'failed') {
+      PluginLifecycle.setState(LifecycleState.Failed);
+    }
+  }
+
+  validatePlugin(plugin: { id: string; name: string; version: string; entrypoint: string }): boolean {
+    // Einfache Validierung
+    if (!plugin.id || !plugin.name || !plugin.version) {
+      console.error(`Plugin ${plugin.name} is invalid`);
+      return false;
+    }
+    
+    console.log(`Plugin ${plugin.name} validated successfully`);
+    return true;
   }
 }
 
-const pluginSdk = new PluginSDK(EventBus);
+const pluginSdk = new PluginSDK(EventBus, CapabilityRegistry);

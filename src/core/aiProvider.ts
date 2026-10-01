@@ -28,14 +28,20 @@ export class LMStudioProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        // Bei Fehlern den Chat-Panel in einen Fehlerzustand versetzen
+        console.warn(`LM Studio API request failed with status ${response.status}. Falling back to offline mode.`);
+        
+        // Beispiel für eine Offline-Nachricht
+        return "Ich kann derzeit keine Verbindung zum LM Studio herstellen. Bitte überprüfen Sie Ihre Netzwerkverbindung oder starten Sie den LM Studio-Server.";
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
       console.error('Error sending message to LM Studio:', error);
-      throw error;
+      
+      // Bei Fehlern den Chat-Panel in einen Fehlerzustand versetzen
+      return "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.";
     }
   }
 }

@@ -1,5 +1,7 @@
 // Incident Manager für Fehlerbehandlung und Reparatur
 
+import { PluginLifecycle } from '../sdk/pluginLifecycle';
+
 export class IncidentManager {
   private incidents: Array<{ id: string; timestamp: Date; details: any }> = [];
 
@@ -19,8 +21,24 @@ export class IncidentManager {
 
   async handleIncident(details: any): Promise<void> {
     this.logIncident(details);
-    // Hier könnte der AI-Reparatur-Agent aktiviert werden
+    
+    // AI-Reparatur-Agent aktivieren
     console.log('Handling incident:', details);
+    
+    // Beispiel für eine einfache Reparaturlogik
+    if (details.type === 'plugin-failure') {
+      const pluginId = details.data?.pluginId;
+      if (pluginId) {
+        await this.quarantinePlugin(pluginId);
+      }
+    }
+  }
+
+  private async quarantinePlugin(pluginId: string): Promise<void> {
+    // Plugin in den Quarantäne-Status versetzen
+    PluginLifecycle.setState(LifecycleState.Quarantined);
+    
+    console.log(`Plugin ${pluginId} wurde in Quarantäne gestellt.`);
   }
 }
 
