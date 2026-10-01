@@ -28,6 +28,14 @@ export class LocalDatabase {
         value TEXT
       )
     `);
+    await this.db.run(`
+      CREATE TABLE IF NOT EXISTS lastKnownGood (
+        id TEXT PRIMARY KEY,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        pluginId TEXT,
+        version TEXT
+      )
+    `);
   }
 
   async savePlugin(plugin: { id: string; name: string; version: string; entrypoint: string }): Promise<void> {
@@ -49,6 +57,18 @@ export class LocalDatabase {
   async getSetting(key: string): Promise<string | null> {
     const row = await this.db.get('SELECT * FROM settings WHERE key = ?', [key]);
     return row?.value || null;
+  }
+
+  async saveLastKnownGood(pluginId: string, version: string): Promise<void> {
+    await this.db.run(
+      'INSERT OR REPLACE INTO lastKnownGood (id, pluginId, version) VALUES (?, ?, ?)',
+      [`LKG-${pluginId}`, pluginId, version]
+    );
+  }
+
+  async getLastKnownGood(pluginId: string): Promise<{ version: string } | null> {
+    const row = await this.db.get('SELECT * FROM lastKnownGood WHERE pluginId = ?', [pluginId]);
+    return row ? { version: row.version } : null;
   }
 }
 

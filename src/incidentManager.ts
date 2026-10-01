@@ -1,6 +1,7 @@
 // Incident Manager für Fehlerbehandlung und Reparatur
 
 import { PluginLifecycle } from '../sdk/pluginLifecycle';
+import { LocalDatabase } from '../persistence/database';
 
 export class IncidentManager {
   private incidents: Array<{ id: string; timestamp: Date; details: any }> = [];
@@ -30,6 +31,13 @@ export class IncidentManager {
       const pluginId = details.data?.pluginId;
       if (pluginId) {
         await this.quarantinePlugin(pluginId);
+        
+        // Prüfen, ob ein Last Known Good Version vorhanden ist
+        const lkgVersion = PluginLifecycle.getLastKnownGoodVersion();
+        if (lkgVersion) {
+          console.log(`Rolling back plugin ${pluginId} to version: ${lkgVersion}`);
+          await this.rollbackPlugin(pluginId);
+        }
       }
     }
   }
@@ -39,6 +47,15 @@ export class IncidentManager {
     PluginLifecycle.setState(LifecycleState.Quarantined);
     
     console.log(`Plugin ${pluginId} wurde in Quarantäne gestellt.`);
+  }
+
+  private async rollbackPlugin(pluginId: string): Promise<void> {
+    try {
+      await PluginLifecycle.rollbackToLastKnownGood(pluginId);
+      console.log(`Plugin ${pluginId} erfolgreich auf Last Known Good version zurückgerollt.`);
+    } catch (error) {
+      console.error(`Fehler beim Rollback von Plugin ${pluginId}:`, error);
+    }
   }
 }
 
