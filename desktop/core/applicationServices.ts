@@ -5,6 +5,7 @@ import { ReadOnlyAgentTools } from "../agent/tools"
 import { WorkspaceAgentTools } from "../agent/workspaceTools"
 import { WorkshopPluginHost } from "../plugins/host"
 import { StagedPluginCatalog } from "../plugins/installedCatalog"
+import { supervisorPolicyFromSettings } from "../plugins/lifecycleSupervisor"
 import { StagedPluginRuntime } from "../plugins/stagedRuntime"
 import { PluginManagerView } from "../ui/pluginManager"
 import { PluginPreviewView } from "../ui/pluginPreview"
@@ -39,6 +40,7 @@ export function createApplicationServices(options: ApplicationServiceOptions): A
     storageFor: (pluginId) => options.persistence.namespaced(pluginId),
     incidents: options.incidents,
     logger: options.logger,
+    supervisorPolicy: () => supervisorPolicyFromSettings(options.getSettings()),
   })
   const pluginManager = new PluginManagerView(pluginHost)
   const pluginActions = new PluginActionAgentTools(pluginHost, () =>

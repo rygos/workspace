@@ -205,6 +205,29 @@ export function mountShell(root: HTMLElement): void {
               </select>
               <span class="field-hint">Jeder Austausch, Testlauf und Canary braucht weiterhin eine eigene Bestätigung.</span>
             </label>
+            <div class="field-grid">
+              <label class="field" for="setting-failure-threshold">
+                <span>Fehler bis zur Plugin-Quarantäne</span>
+                <select id="setting-failure-threshold" name="pluginFailureThreshold">
+                  <option value="2">2 gleiche Fehler</option>
+                  <option value="3">3 gleiche Fehler</option>
+                  <option value="4">4 gleiche Fehler</option>
+                  <option value="5">5 gleiche Fehler</option>
+                  <option value="10">10 gleiche Fehler</option>
+                </select>
+              </label>
+              <label class="field" for="setting-failure-window">
+                <span>Fehlerzeitfenster</span>
+                <select id="setting-failure-window" name="pluginFailureWindowMs">
+                  <option value="300000">5 Minuten</option>
+                  <option value="900000">15 Minuten</option>
+                  <option value="1800000">30 Minuten</option>
+                  <option value="3600000">1 Stunde</option>
+                  <option value="7200000">2 Stunden</option>
+                </select>
+              </label>
+            </div>
+            <span class="field-hint">Gleiche Laufzeitfehler innerhalb dieses Fensters öffnen den Circuit Breaker für reguläre und Staging-Plugins.</span>
             <p class="phase-note">Die Unterhaltung ist aktiv. Änderungen an der Anwendung werden erst mit dem validierten Plugin-Workflow angewendet.</p>
           </section>
           <section class="settings-section" id="workspace-access-section" aria-labelledby="workspace-access-title" hidden>

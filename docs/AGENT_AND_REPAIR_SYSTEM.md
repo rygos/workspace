@@ -9,7 +9,7 @@ HEALTHY -> FAILURE_DETECTED -> ISOLATED -> DIAGNOSING -> PATCHING_STAGING -> VAL
 Failure paths return to PATCHING_STAGING while retry budget remains. When exhausted: ROLLBACK/QUARANTINED. Never spin forever.
 
 ## Circuit breaker
-Track repeated equivalent incidents using normalized fingerprints. The current lifecycle supervisor quarantines after three matching failures in 30 minutes. Staged runtime failures enter this same breaker; quarantine stops the active staging runtime and blocks activation and repair canaries. Below the threshold, the existing Hot Reload path restores the prior version when available. Clearing quarantine requires direct user confirmation on a manual activation. Configurable breaker thresholds and cooldown remain open work; do not continuously consume model resources.
+Track repeated equivalent incidents using normalized fingerprints. Settings configure the lifecycle supervisor to quarantine after two to ten matching failures in a five-minute to two-hour window; defaults are three failures in 30 minutes. Staged runtime failures enter this same breaker; quarantine stops the active staging runtime and blocks activation and repair canaries. Below the threshold, the existing Hot Reload path restores the prior version when available. Clearing quarantine requires direct user confirmation on a manual activation. A timed cooldown remains open work; do not continuously consume model resources.
 
 ## Repair validation
 A repair should add a regression test where practical. Run targeted tests plus tests of capability consumers. Validate manifest and permissions. Keep the old artifact loaded/available for rollback until observation succeeds.

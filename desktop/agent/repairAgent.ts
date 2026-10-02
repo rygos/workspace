@@ -2,7 +2,7 @@ import type { Incident, IncidentJournal } from "../core/incidentManager"
 import type { Logger } from "../core/logger"
 import type { Settings } from "../core/model"
 import type { OpenAICompatibleProvider } from "../core/provider"
-import { LifecycleSupervisor } from "../plugins/lifecycleSupervisor"
+import { LifecycleSupervisor, supervisorPolicyFromSettings } from "../plugins/lifecycleSupervisor"
 import type { StagedPluginRuntime } from "../plugins/stagedRuntime"
 import type { StagedPluginRuntimeFailure } from "../plugins/stagedRuntimeFailures"
 import { diagnoseIncident } from "./incidentDiagnosis"
@@ -34,7 +34,9 @@ export class RepairAgent {
   private readonly supervisor: LifecycleSupervisor
 
   constructor(private readonly options: RepairAgentOptions) {
-    this.supervisor = new LifecycleSupervisor(options.incidents, options.logger)
+    this.supervisor = new LifecycleSupervisor(options.incidents, options.logger, () =>
+      supervisorPolicyFromSettings(options.getSettings()),
+    )
     this.stagedRepairer = new StagedPluginRepairer({
       provider: options.provider,
       getApiKey: options.getApiKey,

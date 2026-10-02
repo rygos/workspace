@@ -1,5 +1,6 @@
 import type { Incident, IncidentJournal } from "../core/incidentManager"
 import type { Logger } from "../core/logger"
+import type { Settings } from "../core/model"
 import type { PluginStatus } from "./contracts"
 
 export type SupervisorPolicy = {
@@ -12,11 +13,20 @@ const DEFAULT_POLICY: SupervisorPolicy = {
   windowMs: 30 * 60 * 1000,
 }
 
+export function supervisorPolicyFromSettings(
+  settings: Pick<Settings, "pluginFailureThreshold" | "pluginFailureWindowMs">,
+): SupervisorPolicy {
+  return {
+    maxFailures: settings.pluginFailureThreshold,
+    windowMs: settings.pluginFailureWindowMs,
+  }
+}
+
 export class LifecycleSupervisor {
   constructor(
     private readonly journal: IncidentJournal,
     private readonly logger: Logger,
-    private readonly policy: SupervisorPolicy = DEFAULT_POLICY,
+    private readonly policy: SupervisorPolicy | (() => SupervisorPolicy) = DEFAULT_POLICY,
     private readonly now: () => number = Date.now,
   ) {}
 
@@ -94,7 +104,8 @@ export class LifecycleSupervisor {
     pluginId: string,
     incident: Incident,
   ): Promise<boolean> {
-    const threshold = this.now() - this.policy.windowMs
+    const policy = typeof this.policy === "function" ? this.policy() : this.policy
+    const threshold = this.now() - policy.windowMs
     const attempts = (await this.journal.list()).filter(
       (candidate) =>
         candidate.fingerprint === incident.fingerprint &&
@@ -102,7 +113,7 @@ export class LifecycleSupervisor {
         candidate.status !== "resolved" &&
         candidate.status !== "restored",
     )
-    if (attempts.length < this.policy.maxFailures) return false
+    if (attempts.length < policy.maxFailures) return false
 
     await this.journal.setQuarantined(pluginId, true)
     if (incident.status !== "quarantined") await this.journal.transition(incident.id, "quarantined")

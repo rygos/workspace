@@ -36,6 +36,10 @@ export function populateSettings(
   field<HTMLSelectElement>("#setting-repair-budget").value = String(
     settings.stagedRepairAttemptLimit,
   )
+  field<HTMLSelectElement>("#setting-failure-threshold").value = String(
+    settings.pluginFailureThreshold,
+  )
+  field<HTMLSelectElement>("#setting-failure-window").value = String(settings.pluginFailureWindowMs)
 
   updateAvailableModels(models)
   updateTemperatureLabel()
@@ -53,6 +57,8 @@ export function readSettingsForm():
     timeoutMs: Number(data.get("timeoutMs")),
     developmentMode: data.get("developmentMode"),
     stagedRepairAttemptLimit: Number(data.get("stagedRepairAttemptLimit")),
+    pluginFailureThreshold: Number(data.get("pluginFailureThreshold")),
+    pluginFailureWindowMs: Number(data.get("pluginFailureWindowMs")),
   })
 
   if (!parsed.success) {

@@ -21,6 +21,12 @@ export const SettingsSchema = z.object({
   timeoutMs: z.number().int().min(5_000).max(180_000),
   developmentMode: DevelopmentModeSchema,
   stagedRepairAttemptLimit: z.number().int().min(0).max(3).default(1),
+  pluginFailureThreshold: z.number().int().min(2).max(10).default(3),
+  pluginFailureWindowMs: z
+    .number()
+    .int()
+    .refine((value) => [300_000, 900_000, 1_800_000, 3_600_000, 7_200_000].includes(value))
+    .default(1_800_000),
 })
 
 export type DevelopmentMode = z.infer<typeof DevelopmentModeSchema>
@@ -52,6 +58,8 @@ export const DEFAULT_SETTINGS = {
   timeoutMs: 60_000,
   developmentMode: "normal",
   stagedRepairAttemptLimit: 1,
+  pluginFailureThreshold: 3,
+  pluginFailureWindowMs: 1_800_000,
 } satisfies Settings
 
 export const DEFAULT_APP_STATE = {

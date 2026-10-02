@@ -5,6 +5,7 @@ import { CapabilityRegistry } from "./capabilityRegistry"
 import type { PluginManifest, PluginStatus } from "./contracts"
 import type { DemoCapabilities, DemoEvent, NotesService } from "./demoNotes"
 import { EventBus } from "./eventBus"
+import type { SupervisorPolicy } from "./lifecycleSupervisor"
 import { LifecycleSupervisor } from "./lifecycleSupervisor"
 import type { DiscoveredPlugin } from "./loader"
 import { PluginLoader } from "./loader"
@@ -21,6 +22,7 @@ export type PluginHostOptions = {
   readonly storageFor: (pluginId: string) => PluginStorageApi
   readonly incidents: IncidentJournal
   readonly logger: Logger
+  readonly supervisorPolicy?: () => SupervisorPolicy
 }
 
 export class PluginNotFoundError extends Error {
@@ -59,7 +61,11 @@ export class WorkshopPluginHost {
   private readonly definitions = new Map<string, DiscoveredPlugin<DemoCapabilities, DemoEvent>>()
 
   constructor(private readonly options: PluginHostOptions) {
-    this.supervisor = new LifecycleSupervisor(options.incidents, options.logger)
+    this.supervisor = new LifecycleSupervisor(
+      options.incidents,
+      options.logger,
+      options.supervisorPolicy,
+    )
     this.runtime = new PluginRuntime(
       this.capabilities,
       this.events,
