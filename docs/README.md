@@ -1,19 +1,9 @@
 # Codex Specification Package — Self-Evolving AI Desktop Platform
 
-Dieses Archiv ist eine selbstständige Spezifikation für Codex. Kopieren/Sie extrahieren Sie es in die Wurzel eines neuen Projekts und bitten Sie Codex, zuerst `AGENTS.md` und `CODEX_PROMPT.md` zu lesen, dann alle referenzierten Spezifikationsdateien.
+This archive is a self-contained specification for Codex. Copy/extract it into the root of a new project and tell Codex to read `AGENTS.md` and `CODEX_PROMPT.md` first, then all referenced specification files.
 
-Die Anwendung beginnt als leere, plattformübergreifende Arbeitsumgebung mit einem rechtsseitigen Chat, der mit LM Studio verbunden ist. Benutzeranforderungen werden als TypeScript/JavaScript-Plugins implementiert. Die zentrale Zuverlässigkeitsanforderung besteht darin, dass generierte Fehler isoliert sind und automatisch an einen begrenzten AI-Reparatur-Agent übergeben werden, während der stabile Core und die Wiederherstellung/Chat-Schnittstelle weiterhin verfügbar bleiben.
+The application begins as an empty cross-platform workspace with a right-side chat connected to local LM Studio. User feature requests are implemented as TypeScript/JavaScript plugins. The central reliability requirement is that generated feature failures are isolated and automatically handed to a bounded AI Repair Agent while the stable Core and recovery/chat interface remain available.
 
-## Projektstruktur
+Recommended first Codex instruction after extraction:
 
-Das Projekt folgt einer klaren Architektur mit den folgenden Verzeichnissen:
-
-- `core/`: Enthält den stabilen Kern der Anwendung
-- `plugins/`: Speichert alle Plugins und deren Manifeste
-- `sdk/`: Bietet APIs für Plugin-Entwicklung
-- `ui/`: Enthält die Benutzeroberfläche
-- `utils/`: Hilfsfunktionen wie Logger und Datenbank
-
-## Empfohlener erster Codex-Befehl nach dem Extrahieren:
-
-> Lesen Sie AGENTS.md, CODEX_PROMPT.md und alle Spezifikations-Markdown-Dateien vollständig. Beginnen Sie mit Phase 0. Erstellen Sie docs/ARCHITECTURE.md und docs/ROADMAP.md, bevor Sie Anwendungscode schreiben, dann implementieren Sie schrittweise, während das Projekt baubar bleibt.
+> Read AGENTS.md, CODEX_PROMPT.md and all specification Markdown files completely. Start with Phase 0. Produce docs/ARCHITECTURE.md and docs/ROADMAP.md before writing application code, then implement incrementally while keeping the project buildable.

@@ -24,4 +24,4 @@ All generated plugins and dynamically added user features use TypeScript/JavaScr
 Plugins publish typed capabilities and events. Maintain a graph of providers and consumers. Direct cross-plugin imports are discouraged/prohibited unless explicitly part of a stable SDK mechanism.
 
 ## Hot reload
-Reload only validated artifacts. Keep old version available until new version passes an observation window. If hot reload is unsafe for a particular change, degrade gracefully and request/recommend a controlled restart rather than risking Core integrity.
+Reload only validated artifacts. Keep old version available through a 10-second observation window after activation or Hot Reload. A reported runtime failure during that window withdraws the candidate and restores the prior version when one exists. If hot reload is unsafe for a particular change, degrade gracefully and request/recommend a controlled restart rather than risking Core integrity.

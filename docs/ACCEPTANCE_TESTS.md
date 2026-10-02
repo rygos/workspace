@@ -8,8 +8,8 @@
 6. Task plugin can consume a notes capability without direct uncontrolled coupling.
 7. Plugin UI render exception is contained; Core/chat stay alive.
 8. Plugin event-handler exception is contained and incident is captured.
-9. Runtime defect automatically launches Repair Agent.
-10. Repair happens in staging, not directly in active source/artifact.
+9. A new trusted-plugin incident or active staged-plugin runtime failure automatically starts a local AI diagnosis and records its bounded summary in incident history; any trusted activation function or staged entrypoint source context is redacted, capped and not persisted.
+10. After a staged-plugin runtime incident, repair may apply at most one exact `plugin.js` replacement to its originating staging copy after direct confirmation; the artifact must pass static acceptance checks and must not activate automatically. Cancellation or validation failure leaves the failed runtime stopped.
 11. Successful repair creates regression validation, passes gates and hot reloads.
 12. Immediate recurrence causes failed candidate to be withdrawn.
 13. Repeated unrepairable error hits retry limit/circuit breaker and quarantines or rolls back plugin.
@@ -18,3 +18,8 @@
 16. Capability-breaking change triggers tests for known consumers.
 17. Agent cannot write outside approved workspace/staging paths through normal tools.
 18. Git/change/incident history explains what happened.
+19. Staging plugin acceptance checks report the fixed artifact pair, manifest schema, preview permissions and bundle export separately; malformed artifacts fail without running their code.
+20. A statically valid staging plugin activates in the main workspace only after direct confirmation, remains isolated in an iframe, and stores declared plugin data under its own persistent namespace. Restarting Workshop does not activate staged code automatically.
+21. Hot Reload accepts only the same plugin ID. A candidate is started in a hidden sandbox with transactional storage; after its startup succeeds, the new frame replaces the active frame without restarting Workshop. If candidate startup fails, the previous frame and its stored state remain active. If the replacement later reports a runtime failure, its frame is stopped, its storage changes are rolled back, and the previous version is loaded again automatically.
+22. After activation or Hot Reload, the runtime reports a 10-second observation period. Hot Reload remains unavailable during that period; a runtime failure restores the prior version and storage, while a candidate that survives is accepted and its rollback snapshot is released.
+23. A user can install a statically accepted artifact after direct confirmation. Its manifest and bounded entrypoint remain in local app storage if the staging copy is removed. Restarting does not execute installed code; each activation revalidates the saved artifact and asks for direct confirmation. Removing an installation also requires confirmation and is blocked while that plugin is active.

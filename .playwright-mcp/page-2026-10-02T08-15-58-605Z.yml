@@ -1,0 +1,22 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [aria-hidden] [ref=e6]: W
+      - generic [ref=e7]: Workshop
+      - generic [ref=e8]: LOKALER ARBEITSBEREICH
+    - button "Einstellungen" [ref=e10] [cursor=pointer]
+    - navigation "Bereich auswählen" [ref=e11]:
+      - button "Arbeitsbereich" [ref=e12] [cursor=pointer]
+      - button "KI-Chat" [ref=e13] [cursor=pointer]
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - paragraph [ref=e17]: DEIN ARBEITSBEREICH
+        - heading "Was möchtest du zum Leben erwecken?" [level=1] [ref=e18]: Was möchtest duzum Leben erwecken?
+        - paragraph [ref=e19]: Beginne mit einer Idee. Dein Arbeitsbereich wächst Schritt für Schritt mit dir.
+      - region "Arbeitsbereich ist leer" [ref=e20]:
+        - heading "Hier ist noch Platz." [level=2] [ref=e25]
+        - paragraph [ref=e26]: Stell deinem lokalen Modell eine Frage oder beschreibe, was du bauen möchtest.
+        - button "Mit dem KI-Chat beginnen" [ref=e27] [cursor=pointer]
+      - generic [ref=e28]: Deine Unterhaltung bleibt auf diesem Gerät.
+  - status [ref=e31]
