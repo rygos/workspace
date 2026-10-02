@@ -22,7 +22,7 @@ jobs:
           - name: Linux x64
             os: ubuntu-22.04
             rust-target: ""
-            args: --bundles deb
+            args: --bundles deb,appimage
           - name: Windows x64
             os: windows-latest
             rust-target: ""
