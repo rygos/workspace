@@ -5,6 +5,7 @@ import type { AppState } from "./model"
 import { AppStateSchema, DEFAULT_APP_STATE } from "./model"
 
 const STATE_KEY = "app-state"
+const RECOVERY_KEY = "app-state-recovery"
 const STORE_FILE = "workshop.json"
 
 export class Persistence {
@@ -18,14 +19,26 @@ export class Persistence {
     if (isTauri()) {
       const store = await this.nativeStore
       const data = await store?.get<unknown>(STATE_KEY)
-      return this.parse(data)
+      return this.parseAndPreserveInvalid(data, async (recovery) => {
+        if (store === null || (await store.get(RECOVERY_KEY)) !== undefined) return
+        await store.set(RECOVERY_KEY, recovery)
+        await store.save()
+      })
     }
 
     const saved = window.localStorage.getItem(STATE_KEY)
     if (saved === null) return DEFAULT_APP_STATE
-
-    const result = AppStateSchema.safeParse(JSON.parse(saved) as unknown)
-    return result.success ? result.data : DEFAULT_APP_STATE
+    let data: unknown
+    try {
+      data = JSON.parse(saved) as unknown
+    } catch {
+      data = saved
+    }
+    return this.parseAndPreserveInvalid(data, (recovery) => {
+      if (window.localStorage.getItem(RECOVERY_KEY) === null) {
+        window.localStorage.setItem(RECOVERY_KEY, JSON.stringify(recovery))
+      }
+    })
   }
 
   async save(state: AppState): Promise<void> {
@@ -84,9 +97,19 @@ export class Persistence {
     return load(STORE_FILE, { autoSave: false })
   }
 
-  private parse(data: unknown): AppState {
+  private async parseAndPreserveInvalid(
+    data: unknown,
+    preserve: (recovery: {
+      readonly savedAt: string
+      readonly data: unknown
+    }) => Promise<void> | void,
+  ): Promise<AppState> {
     const result = AppStateSchema.safeParse(data)
-    return result.success ? result.data : DEFAULT_APP_STATE
+    if (result.success) return result.data
+    if (data !== undefined) {
+      await preserve({ savedAt: new Date().toISOString(), data })
+    }
+    return DEFAULT_APP_STATE
   }
 
   private validateApplicationDataKey(key: string): void {

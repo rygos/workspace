@@ -47,11 +47,12 @@ export const ChatMessageSchema = z.object({
 export type ChatMessage = z.infer<typeof ChatMessageSchema>
 
 export const AppStateSchema = z.object({
+  schemaVersion: z.literal(1).default(1),
   settings: SettingsSchema,
-  messages: z.array(ChatMessageSchema).max(200),
+  messages: z.array(ChatMessageSchema).max(200).default([]),
   workspaceRoot: z.string().max(4096).nullable().default(null),
-  railWidth: z.number().int().min(300).max(520),
-  railCollapsed: z.boolean(),
+  railWidth: z.number().int().min(300).max(520).default(360),
+  railCollapsed: z.boolean().default(false),
 })
 
 export type AppState = z.infer<typeof AppStateSchema>
@@ -69,6 +70,7 @@ export const DEFAULT_SETTINGS = {
 } satisfies Settings
 
 export const DEFAULT_APP_STATE = {
+  schemaVersion: 1,
   settings: DEFAULT_SETTINGS,
   messages: [],
   workspaceRoot: null,
