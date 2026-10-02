@@ -36,27 +36,14 @@ export class LifecycleSupervisor {
       pluginVersion: version,
       status: "isolated",
     })
-    const threshold = this.now() - this.policy.windowMs
-    const attempts = (await this.journal.list()).filter(
-      (candidate) =>
-        candidate.fingerprint === incident.fingerprint &&
-        Date.parse(candidate.createdAt) >= threshold &&
-        candidate.status !== "resolved" &&
-        candidate.status !== "restored",
-    )
-
-    if (attempts.length >= this.policy.maxFailures) {
-      await this.journal.setQuarantined(pluginId, true)
-      await this.journal.transition(incident.id, "quarantined")
-      this.logger.error(
-        "lifecycle-supervisor",
-        `Plugin wegen wiederholter Fehler quarantänisiert: ${pluginId}`,
-      )
-      return "quarantined"
-    }
+    if (await this.quarantineIfThresholdReached(pluginId, incident)) return "quarantined"
 
     this.logger.warn("lifecycle-supervisor", `Pluginfehler isoliert: ${pluginId}`)
     return "failed"
+  }
+
+  async recordExistingFailure(pluginId: string, incident: Incident): Promise<boolean> {
+    return this.quarantineIfThresholdReached(pluginId, incident)
   }
 
   async recordObservedHealthy(pluginId: string, version: string): Promise<void> {
@@ -101,6 +88,29 @@ export class LifecycleSupervisor {
         await this.journal.transition(incident.id, status)
       }
     }
+  }
+
+  private async quarantineIfThresholdReached(
+    pluginId: string,
+    incident: Incident,
+  ): Promise<boolean> {
+    const threshold = this.now() - this.policy.windowMs
+    const attempts = (await this.journal.list()).filter(
+      (candidate) =>
+        candidate.fingerprint === incident.fingerprint &&
+        Date.parse(candidate.createdAt) >= threshold &&
+        candidate.status !== "resolved" &&
+        candidate.status !== "restored",
+    )
+    if (attempts.length < this.policy.maxFailures) return false
+
+    await this.journal.setQuarantined(pluginId, true)
+    if (incident.status !== "quarantined") await this.journal.transition(incident.id, "quarantined")
+    this.logger.error(
+      "lifecycle-supervisor",
+      `Plugin wegen wiederholter Fehler quarantänisiert: ${pluginId}`,
+    )
+    return true
   }
 }
 

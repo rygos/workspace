@@ -33,6 +33,9 @@ export function populateSettings(
   field<HTMLInputElement>("#setting-temperature").value = String(settings.temperature)
   field<HTMLSelectElement>("#setting-timeout").value = String(settings.timeoutMs)
   field<HTMLSelectElement>("#setting-mode").value = settings.developmentMode
+  field<HTMLSelectElement>("#setting-repair-budget").value = String(
+    settings.stagedRepairAttemptLimit,
+  )
 
   updateAvailableModels(models)
   updateTemperatureLabel()
@@ -49,6 +52,7 @@ export function readSettingsForm():
     temperature: Number(data.get("temperature")),
     timeoutMs: Number(data.get("timeoutMs")),
     developmentMode: data.get("developmentMode"),
+    stagedRepairAttemptLimit: Number(data.get("stagedRepairAttemptLimit")),
   })
 
   if (!parsed.success) {

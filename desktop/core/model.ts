@@ -20,6 +20,7 @@ export const SettingsSchema = z.object({
   temperature: z.number().min(0).max(2),
   timeoutMs: z.number().int().min(5_000).max(180_000),
   developmentMode: DevelopmentModeSchema,
+  stagedRepairAttemptLimit: z.number().int().min(0).max(3).default(1),
 })
 
 export type DevelopmentMode = z.infer<typeof DevelopmentModeSchema>
@@ -50,6 +51,7 @@ export const DEFAULT_SETTINGS = {
   temperature: 0.7,
   timeoutMs: 60_000,
   developmentMode: "normal",
+  stagedRepairAttemptLimit: 1,
 } satisfies Settings
 
 export const DEFAULT_APP_STATE = {

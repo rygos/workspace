@@ -160,6 +160,11 @@ export class PluginPreviewView {
     if (!isTauri() || !this.hasWorkspace()) return "failed"
     if (!/^stage-\d+-\d+$/.test(stageId)) return "failed"
     try {
+      if (await this.runtime.isQuarantined(expectedPluginId)) {
+        this.feedback.textContent =
+          "Reparatur-Canary gesperrt: das Plugin ist quarantänisiert und muss manuell freigegeben werden."
+        return "busy"
+      }
       const report = await this.validateStagingPlugin(stageId)
       this.renderChecks(report)
       if (!report.passed) {
@@ -316,14 +321,16 @@ export class PluginPreviewView {
       this.renderChecks(report)
       if (!report.passed)
         throw new Error("Das installierte Plugin besteht die Akzeptanzprüfung nicht mehr.")
+      const quarantined = await this.runtime.isQuarantined(pluginId)
       if (
         !window.confirm(
-          `${installed.manifest.name} (${pluginId} · ${installed.manifest.version}) jetzt im Arbeitsbereich ausführen?\n\nDer Code läuft isoliert in einer Sandbox und erhält nur die deklarierten Rechte. Diese Aktivierung gilt bis zum Schließen der App; nach einem Neustart startet das Plugin nicht automatisch.`,
+          `${installed.manifest.name} (${pluginId} · ${installed.manifest.version}) jetzt im Arbeitsbereich ausführen?${quarantined ? "\n\nDieses Plugin ist quarantänisiert. Fortfahren hebt die Quarantäne manuell auf." : ""}\n\nDer Code läuft isoliert in einer Sandbox und erhält nur die deklarierten Rechte. Diese Aktivierung gilt bis zum Schließen der App; nach einem Neustart startet das Plugin nicht automatisch.`,
         )
       ) {
         this.feedback.textContent = "Aktivierung abgebrochen."
         return
       }
+      if (quarantined) await this.runtime.clearQuarantine(pluginId)
       await this.runtime.activate(installed.sourceStageId, installed.manifest, installed.entrypoint)
       this.feedback.textContent =
         "Installiertes Plugin aktiviert; die 10-sekündige Beobachtungsphase läuft."
@@ -410,14 +417,16 @@ export class PluginPreviewView {
       }
       const artifact = ArtifactSchema.parse(await invoke<unknown>("load_staging_plugin", { id }))
       const manifest = PluginManifestSchema.parse(JSON.parse(artifact.manifest) as unknown)
+      const quarantined = await this.runtime.isQuarantined(manifest.id)
       if (
         !window.confirm(
-          `${manifest.name} (${manifest.id}@${manifest.version}) regulär im Arbeitsbereich aktivieren?\n\nBerechtigungen: ${manifest.permissions.join(", ") || "keine"}. Der Code bleibt in einer isolierten Sandbox; Plugin-Speicher wird dauerhaft gespeichert. Erneute Aktivierung nach einem App-Neustart erfolgt nicht automatisch.`,
+          `${manifest.name} (${manifest.id}@${manifest.version}) regulär im Arbeitsbereich aktivieren?${quarantined ? "\n\nDieses Plugin ist quarantänisiert. Fortfahren hebt die Quarantäne manuell auf." : ""}\n\nBerechtigungen: ${manifest.permissions.join(", ") || "keine"}. Der Code bleibt in einer isolierten Sandbox; Plugin-Speicher wird dauerhaft gespeichert. Erneute Aktivierung nach einem App-Neustart erfolgt nicht automatisch.`,
         )
       ) {
         this.feedback.textContent = "Aktivierung abgebrochen."
         return
       }
+      if (quarantined) await this.runtime.clearQuarantine(manifest.id)
       await this.runtime.activate(id, manifest, artifact.entrypoint)
       this.feedback.textContent = "Plugin aktiviert; die 10-sekündige Beobachtungsphase läuft."
     } catch (error) {

@@ -2,6 +2,7 @@ import type { Incident, IncidentJournal } from "../core/incidentManager"
 import type { Logger } from "../core/logger"
 import type { Settings } from "../core/model"
 import type { OpenAICompatibleProvider } from "../core/provider"
+import { LifecycleSupervisor } from "../plugins/lifecycleSupervisor"
 import type { StagedPluginRuntime } from "../plugins/stagedRuntime"
 import type { StagedPluginRuntimeFailure } from "../plugins/stagedRuntimeFailures"
 import { diagnoseIncident } from "./incidentDiagnosis"
@@ -29,9 +30,11 @@ export class RepairAgent {
   private unsubscribe: (() => void) | undefined
   private unsubscribeStagedFailures: (() => void) | undefined
   private readonly stagedRepairer: StagedPluginRepairer
-  private readonly stagedRepairAttempts = new Set<string>()
+  private readonly stagedRepairAttempts = new Map<string, number>()
+  private readonly supervisor: LifecycleSupervisor
 
   constructor(private readonly options: RepairAgentOptions) {
+    this.supervisor = new LifecycleSupervisor(options.incidents, options.logger)
     this.stagedRepairer = new StagedPluginRepairer({
       provider: options.provider,
       getApiKey: options.getApiKey,
@@ -70,6 +73,16 @@ export class RepairAgent {
           status: "isolated",
         })
         .then(async (incident) => {
+          if (await this.supervisor.recordExistingFailure(failure.pluginId, incident)) {
+            runtime.quarantine(failure.pluginId)
+            await this.options.incidents.updateRepairState(
+              incident.id,
+              "repair_unavailable",
+              "Wegen wiederholter Laufzeitfehler quarantänisiert. Die Aktivierung und automatische Reparatur sind gesperrt, bis du das Plugin manuell freigibst.",
+            )
+            this.options.onUpdate()
+            return
+          }
           if (!(await this.diagnoseStagedIncident(incident, failure))) return
           await this.repairStagedIncident(incident, failure)
         })
@@ -107,21 +120,25 @@ export class RepairAgent {
     incident: Incident,
     failure: StagedPluginRuntimeFailure,
   ): Promise<void> {
-    if (this.stagedRepairAttempts.has(failure.pluginId)) {
+    const settings = this.options.getSettings()
+    const usedAttempts = this.stagedRepairAttempts.get(failure.pluginId) ?? 0
+    if (usedAttempts >= settings.stagedRepairAttemptLimit) {
       await this.options.incidents.updateRepairState(
         incident.id,
         "repair_unavailable",
-        "Das Reparaturlimit für dieses Plugin in dieser App-Sitzung ist erreicht.",
+        "Das konfigurierte Reparaturlimit für dieses Plugin in dieser App-Sitzung ist erreicht.",
       )
       this.options.onUpdate()
       return
     }
-    this.stagedRepairAttempts.add(failure.pluginId)
+    this.stagedRepairAttempts.set(failure.pluginId, usedAttempts + 1)
     await this.options.incidents.updateRepairState(incident.id, "repairing")
     this.options.onUpdate()
     try {
       const result = await this.stagedRepairer.repair(incident, failure, this.options.getSettings())
-      if (result.status === "unavailable") this.stagedRepairAttempts.delete(failure.pluginId)
+      if (result.status === "unavailable") {
+        this.stagedRepairAttempts.set(failure.pluginId, usedAttempts)
+      }
       switch (result.status) {
         case "staged":
           await this.options.incidents.updateRepairState(

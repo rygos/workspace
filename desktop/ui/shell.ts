@@ -195,6 +195,16 @@ export function mountShell(root: HTMLElement): void {
               </select>
               <span class="field-hint">Autonomer Modus überspringt niemals Validierung oder Sicherheitsgrenzen.</span>
             </label>
+            <label class="field" for="setting-repair-budget">
+              <span>Automatische Reparaturversuche pro Plugin und App-Sitzung</span>
+              <select id="setting-repair-budget" name="stagedRepairAttemptLimit">
+                <option value="0">Keine automatischen Reparaturversuche</option>
+                <option value="1">1 Versuch</option>
+                <option value="2">2 Versuche</option>
+                <option value="3">3 Versuche</option>
+              </select>
+              <span class="field-hint">Jeder Austausch, Testlauf und Canary braucht weiterhin eine eigene Bestätigung.</span>
+            </label>
             <p class="phase-note">Die Unterhaltung ist aktiv. Änderungen an der Anwendung werden erst mit dem validierten Plugin-Workflow angewendet.</p>
           </section>
           <section class="settings-section" id="workspace-access-section" aria-labelledby="workspace-access-title" hidden>

@@ -14,12 +14,18 @@ import { renderStagedRuntimeState } from "./stagedRuntimeView"
 import { parseStagedPluginManifest } from "./stagingArtifact"
 import { TransactionalPluginStorage } from "./transactionalPluginStorage"
 
+export type StagedRuntimeProtection = {
+  readonly isQuarantined: (pluginId: string) => Promise<boolean>
+  readonly clearQuarantine: (pluginId: string) => Promise<void>
+}
+
 export class StagedPluginRuntime {
   readonly failures = new StagedPluginFailureChannel()
   private active: LoadedPlugin | undefined
   private state: StagedRuntimeState = { status: "inactive" }
   private readonly stateListeners = new Set<(state: StagedRuntimeState) => void>()
   private cancelObservation: (() => void) | undefined
+  private readonly quarantinedPluginIds = new Set<string>()
 
   constructor(
     private readonly mountPoint: HTMLElement,
@@ -29,6 +35,10 @@ export class StagedPluginRuntime {
       elapsed: () => void,
       delayMs: number,
     ) => () => void = scheduleAfter,
+    private readonly protection: StagedRuntimeProtection = {
+      isQuarantined: async () => false,
+      clearQuarantine: async () => undefined,
+    },
   ) {
     this.publishState(this.state)
   }
@@ -50,6 +60,11 @@ export class StagedPluginRuntime {
   ): Promise<StagedRuntimeState> {
     if (this.active !== undefined) throw new Error("Eine Staging-Erweiterung ist bereits aktiv.")
     const manifest = parseStagedPluginManifest(manifestInput, entrypoint)
+    if (await this.isQuarantined(manifest.id)) {
+      throw new Error(
+        "Diese Staging-Erweiterung ist quarantänisiert und muss manuell freigegeben werden.",
+      )
+    }
     if ((await this.registeredPluginIds()).includes(manifest.id)) {
       throw new Error("Diese Plugin-ID ist bereits durch die App registriert.")
     }
@@ -85,6 +100,11 @@ export class StagedPluginRuntime {
     const previous = this.active
     if (previous === undefined) throw new Error("Es ist keine Staging-Erweiterung aktiv.")
     const manifest = parseStagedPluginManifest(manifestInput, entrypoint)
+    if (await this.isQuarantined(manifest.id)) {
+      throw new Error(
+        "Diese Staging-Erweiterung ist quarantänisiert und muss manuell freigegeben werden.",
+      )
+    }
     if (manifest.id !== previous.manifest.id) {
       throw new Error("Hot Reload erfordert dieselbe Plugin-ID wie die aktive Erweiterung.")
     }
@@ -139,6 +159,25 @@ export class StagedPluginRuntime {
     this.mountPoint.hidden = true
     this.publishState({ status: "inactive" })
     return this.status
+  }
+
+  async isQuarantined(pluginId: string): Promise<boolean> {
+    return this.quarantinedPluginIds.has(pluginId) || this.protection.isQuarantined(pluginId)
+  }
+
+  async clearQuarantine(pluginId: string): Promise<void> {
+    await this.protection.clearQuarantine(pluginId)
+    this.quarantinedPluginIds.delete(pluginId)
+  }
+
+  quarantine(pluginId: string): void {
+    this.quarantinedPluginIds.add(pluginId)
+    if (
+      this.active?.manifest.id === pluginId &&
+      (this.state.status === "active" || this.state.status === "observing")
+    ) {
+      this.deactivate()
+    }
   }
 
   private async loadCandidate(
@@ -200,6 +239,10 @@ export class StagedPluginRuntime {
     this.publishState(stateFor("recovering", failed))
     try {
       await failed.storage.rollback()
+      if (await this.isQuarantined(failed.manifest.id)) {
+        this.publishState(stateFor("failed", failed))
+        return
+      }
       const fallback = failed.fallback
       if (fallback === undefined) {
         this.publishState(stateFor("failed", failed))
@@ -210,6 +253,13 @@ export class StagedPluginRuntime {
         fallback.manifest,
         fallback.entrypoint,
       )
+      if (await this.isQuarantined(failed.manifest.id)) {
+        await restored.storage.rollback()
+        restored.sandbox.unmount()
+        restored.temporaryMount.remove()
+        this.publishState(stateFor("failed", failed))
+        return
+      }
       if (restored.hasFailed()) {
         await restored.storage.rollback()
         restored.sandbox.unmount()

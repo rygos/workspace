@@ -48,6 +48,11 @@ export function createApplicationServices(options: ApplicationServiceOptions): A
     options.element<HTMLElement>("#staged-runtime-mount"),
     (pluginId) => options.persistence.namespaced(pluginId),
     async () => (await pluginHost.list()).map(({ manifest }) => manifest.id),
+    undefined,
+    {
+      isQuarantined: (pluginId) => options.incidents.quarantined(pluginId),
+      clearQuarantine: (pluginId) => options.incidents.setQuarantined(pluginId, false),
+    },
   )
   const stagedPluginCatalog = new StagedPluginCatalog(options.persistence)
   const pluginPreview = new PluginPreviewView(
