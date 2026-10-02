@@ -71,3 +71,29 @@ test("local data export can restore settings without exporting the session key",
     "safe",
   )
 })
+
+test("an unsupported import is rejected without replacing the current settings", async ({ page }) => {
+  await page.route("**/__workshop_lmstudio/v1/models", (route) =>
+    route.fulfill({ json: { data: [{ id: "e2e-local-model" }] } }),
+  )
+  await page.goto("/")
+  await page.getByRole("button", { name: "Einstellungen", exact: true }).click()
+  const settings = page.getByRole("dialog", { name: "Einstellungen" })
+  await settings.locator("#setting-mode").selectOption("safe")
+  await settings.getByRole("button", { name: "Einstellungen speichern" }).click()
+  await expect(settings.locator("#save-feedback")).toHaveText("Gespeichert.")
+
+  await settings.locator("#setting-mode").selectOption("normal")
+  const fileChooserPromise = page.waitForEvent("filechooser")
+  await settings.getByRole("button", { name: "Daten wiederherstellen" }).click()
+  const fileChooser = await fileChooserPromise
+  await fileChooser.setFiles({
+    name: "unsupported-workshop-export.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      JSON.stringify({ format: "workshop-local-data", version: 99, exportedAt: new Date().toISOString(), entries: [] }),
+    ),
+  })
+  await expect(settings.locator("#save-feedback")).toContainText("nicht unterstützte Version")
+  await expect(settings.locator("#setting-mode")).toHaveValue("normal")
+})
