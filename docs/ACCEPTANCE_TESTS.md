@@ -29,3 +29,4 @@
 27. Older application state missing fields introduced by newer releases migrates through safe defaults; invalid or newer incompatible state is preserved in a local recovery copy before defaults are returned, and later saves do not replace that copy.
 28. After direct confirmation, local export downloads a versioned JSON containing app state and namespaced app/plugin data, excludes session credentials, and rejects exports above 50 MiB.
 29. Local restore validates the complete versioned JSON and all keys before any write, requires direct confirmation, replaces only exported app/plugin namespaces, rolls back a failed write, and leaves the incident journal untouched.
+30. `bun run test:e2e` launches an isolated Vite instance and verifies that the workspace and chat shell render, settings persist across reload, and an unavailable local model leaves the workspace and Settings usable.

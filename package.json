@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 1420 --strictPort",
     "build": "tsc --noEmit && vite build",
-    "check": "biome check desktop index.html package.json tsconfig.json vite.config.ts biome.json src-tauri/tauri.conf.json src-tauri/capabilities/default.json",
+    "check": "biome check desktop e2e index.html package.json playwright.config.ts tsconfig.json vite.config.ts biome.json src-tauri/tauri.conf.json src-tauri/capabilities/default.json",
     "test": "bun test",
+    "test:e2e": "playwright test",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
+    "@playwright/test": "^1.63.0",
     "@tauri-apps/cli": "^2.8.0",
     "@types/bun": "^1.4.2",
     "typescript": "~5.9.0",
