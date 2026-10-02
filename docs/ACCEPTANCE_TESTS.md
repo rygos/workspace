@@ -34,3 +34,4 @@
 32. The Playwright restore flow rejects an unsupported export version before confirmation and leaves current app settings unchanged.
 33. The Playwright restore flow simulates a one-time storage write failure, surfaces the error, rolls back prior values and retains the pre-import setting after reload.
 34. The Linux Tauri debug executable builds and remains running for at least 15 seconds after launch without a startup crash; native UI interaction must be verified separately.
+35. The desktop packaging workflow builds uploadable Linux `.deb`, Windows `.msi`, and Apple Silicon/Intel macOS `.dmg` artifacts on their native runners without creating a release.
