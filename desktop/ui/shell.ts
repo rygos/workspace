@@ -306,6 +306,13 @@ export function mountShell(root: HTMLElement): void {
             <button class="button button--quiet" id="safe-mode-clear" type="button" hidden>Sicheren Modus verlassen</button>
             <ol class="incident-list" id="incident-list" aria-label="Letzte Vorfälle"></ol>
           </section>
+          <section class="settings-section" aria-labelledby="data-export-title">
+            <div class="section-heading">
+              <h3 id="data-export-title">Lokale Daten</h3>
+              <p>Exportiert Einstellungen, Chat-Verlauf und lokale Plugin-Daten als JSON. Der sitzungsgebundene API-Schlüssel ist nicht enthalten.</p>
+            </div>
+            <button class="button button--quiet" id="data-export" type="button">Daten exportieren</button>
+          </section>
           </div>
           <footer class="dialog-footer">
             <span class="save-feedback" id="save-feedback" role="status"></span>

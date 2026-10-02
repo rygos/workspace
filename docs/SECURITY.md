@@ -6,6 +6,8 @@ Plugin manifests reject duplicate permissions, capabilities, events and dependen
 
 Persisted application state carries a schema version. Missing fields from the initial schema migrate through safe defaults; invalid or newer incompatible data is copied once to a local recovery key before the app falls back to defaults. The recovery copy is retained across later saves and is never sent to the model.
 
+The local JSON export includes the app-state and migration-recovery keys plus namespaced `app:` and `plugin:` values from the application store, is limited to 50 MiB, and requires a direct confirmation that names the included data. Session credentials are never persisted and are excluded. Incident journals use a separate store and are not part of this export.
+
 Use explicit permissions for filesystem, network, clipboard, notifications, database, process execution and other sensitive capabilities. The agent also has scoped tool permissions. Avoid unrestricted shell access. Validate tool arguments and paths and prevent traversal outside allowed project/staging areas.
 
 Dependencies introduced by the agent must be visible and policy checked. Avoid unnecessary dependencies. Never send project data to cloud AI implicitly; LM Studio/local OpenAI-compatible provider is the default.

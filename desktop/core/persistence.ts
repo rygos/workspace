@@ -7,6 +7,15 @@ import { AppStateSchema, DEFAULT_APP_STATE } from "./model"
 const STATE_KEY = "app-state"
 const RECOVERY_KEY = "app-state-recovery"
 const STORE_FILE = "workshop.json"
+const EXPORT_VERSION = 1
+const MAX_EXPORT_BYTES = 50 * 1024 * 1024
+
+export type ApplicationDataExport = {
+  readonly format: "workshop-local-data"
+  readonly version: 1
+  readonly exportedAt: string
+  readonly entries: readonly { readonly key: string; readonly value: unknown }[]
+}
 
 export class Persistence {
   private readonly nativeStore: Promise<Store | null>
@@ -84,6 +93,40 @@ export class Persistence {
     window.localStorage.setItem(`app:${key}`, JSON.stringify(validValue))
   }
 
+  async exportLocalData(): Promise<ApplicationDataExport> {
+    const entries: Array<{ readonly key: string; readonly value: unknown }> = []
+    if (isTauri()) {
+      const store = await this.nativeStore
+      if (store === null) throw new Error("Der lokale Anwendungsspeicher ist nicht verfügbar.")
+      for (const [key, value] of await store.entries<unknown>()) {
+        if (isExportableKey(key)) entries.push({ key, value })
+      }
+    } else {
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index)
+        if (key === null || !isExportableKey(key)) continue
+        const stored = window.localStorage.getItem(key)
+        if (stored === null) continue
+        try {
+          entries.push({ key, value: JSON.parse(stored) as unknown })
+        } catch {
+          entries.push({ key, value: stored })
+        }
+      }
+    }
+
+    const result: ApplicationDataExport = {
+      format: "workshop-local-data",
+      version: EXPORT_VERSION,
+      exportedAt: new Date().toISOString(),
+      entries,
+    }
+    if (new TextEncoder().encode(JSON.stringify(result)).byteLength > MAX_EXPORT_BYTES) {
+      throw new Error("Der lokale Datenexport überschreitet die Grenze von 50 MiB.")
+    }
+    return result
+  }
+
   namespaced(pluginId: string): PluginStorage {
     if (!/^[a-z][a-z0-9-]{1,62}$/.test(pluginId)) {
       throw new Error("Ungültige Plugin-ID für den Speicherbereich.")
@@ -117,6 +160,12 @@ export class Persistence {
       throw new Error("Ungültiger Schlüssel für Anwendungsdaten.")
     }
   }
+}
+
+function isExportableKey(key: string): boolean {
+  return (
+    key === STATE_KEY || key === RECOVERY_KEY || key.startsWith("app:") || key.startsWith("plugin:")
+  )
 }
 
 export class PluginStorage {

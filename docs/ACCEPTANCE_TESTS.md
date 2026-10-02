@@ -27,3 +27,4 @@
 25. Read-only dependency inspection reports runtime capability usage and declared provider/consumer links, and identifies missing or version-mismatched dependencies and dependency cycles without executing plugin code.
 26. Plugin manifests with duplicate declarations, self-dependencies, or capability/event declarations without their required permission fail validation before activation; runtime facades still reject undeclared operations.
 27. Older application state missing fields introduced by newer releases migrates through safe defaults; invalid or newer incompatible state is preserved in a local recovery copy before defaults are returned, and later saves do not replace that copy.
+28. After direct confirmation, local export downloads a versioned JSON containing app state and namespaced app/plugin data, excludes session credentials, and rejects exports above 50 MiB.

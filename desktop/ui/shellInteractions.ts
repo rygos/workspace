@@ -16,6 +16,7 @@ export type ShellInteractionActions = {
   readonly clearSafeMode: () => Promise<void>
   readonly selectWorkspace: () => Promise<void>
   readonly clearWorkspace: () => Promise<void>
+  readonly exportLocalData: () => Promise<void>
 }
 
 export function bindShellInteractions(actions: ShellInteractionActions): void {
@@ -94,6 +95,10 @@ export function bindShellInteractions(actions: ShellInteractionActions): void {
   requiredElement<HTMLButtonElement>("#workspace-clear").addEventListener(
     "click",
     () => void actions.clearWorkspace(),
+  )
+  requiredElement<HTMLButtonElement>("#data-export").addEventListener(
+    "click",
+    () => void actions.exportLocalData(),
   )
 
   requiredElement<HTMLFormElement>("#chat-form").addEventListener("submit", (event) => {

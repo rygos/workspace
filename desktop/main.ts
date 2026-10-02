@@ -197,6 +197,32 @@ function bindEvents(): void {
     clearSafeMode,
     selectWorkspace: () => workspaceAccess.select(),
     clearWorkspace: () => workspaceAccess.clear(),
+    exportLocalData: async () => {
+      if (
+        !window.confirm(
+          "Workshop-Einstellungen, Chat-Verlauf und lokale Plugin-Daten als JSON exportieren? Der sitzungsgebundene API-Schlüssel ist nicht enthalten.",
+        )
+      ) {
+        return
+      }
+      try {
+        const data = await persistence.exportLocalData()
+        const url = URL.createObjectURL(
+          new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+        )
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `workshop-daten-${new Date().toISOString().slice(0, 10)}.json`
+        link.click()
+        window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
+        showSaveFeedback("Lokale Daten wurden exportiert.")
+      } catch (error) {
+        showSaveFeedback(
+          error instanceof Error ? error.message : "Lokale Daten konnten nicht exportiert werden.",
+          true,
+        )
+      }
+    },
   })
   bindResizer({
     getWidth: () => state.railWidth,
