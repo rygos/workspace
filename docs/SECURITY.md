@@ -8,6 +8,8 @@ Persisted application state carries a schema version. Missing fields from the in
 
 The local JSON export includes the app-state and migration-recovery keys plus namespaced `app:` and `plugin:` values from the application store, is limited to 50 MiB, and requires a direct confirmation that names the included data. Session credentials are never persisted and are excluded. Incident journals use a separate store and are not part of this export.
 
+Restore accepts only this versioned format, at most 5,000 entries and 50 MiB, and only the exact app-state/recovery keys or validated `app:` and `plugin:` namespaces. It validates the app state and entire envelope before asking to replace current values. A failed storage write attempts to restore the previous exportable entries; the separate incident journal remains untouched. Imported staged plugin installations remain inert and require their normal validation and activation confirmation.
+
 Use explicit permissions for filesystem, network, clipboard, notifications, database, process execution and other sensitive capabilities. The agent also has scoped tool permissions. Avoid unrestricted shell access. Validate tool arguments and paths and prevent traversal outside allowed project/staging areas.
 
 Dependencies introduced by the agent must be visible and policy checked. Avoid unnecessary dependencies. Never send project data to cloud AI implicitly; LM Studio/local OpenAI-compatible provider is the default.

@@ -312,6 +312,7 @@ export function mountShell(root: HTMLElement): void {
               <p>Exportiert Einstellungen, Chat-Verlauf und lokale Plugin-Daten als JSON. Der sitzungsgebundene API-Schlüssel ist nicht enthalten.</p>
             </div>
             <button class="button button--quiet" id="data-export" type="button">Daten exportieren</button>
+            <button class="button button--quiet" id="data-import" type="button">Daten wiederherstellen</button>
           </section>
           </div>
           <footer class="dialog-footer">

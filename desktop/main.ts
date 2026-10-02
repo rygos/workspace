@@ -6,7 +6,7 @@ import { IncidentJournal } from "./core/incidentManager"
 import { logger } from "./core/logger"
 import type { AppState, Settings } from "./core/model"
 import { DEFAULT_APP_STATE } from "./core/model"
-import { Persistence } from "./core/persistence"
+import { Persistence, validateLocalDataImport } from "./core/persistence"
 import { ProviderError } from "./core/provider"
 import { bindRendererErrorHandlers, handleStartupFailure } from "./core/rendererErrors"
 import { renderMessages, setConnectionState } from "./ui/chatView"
@@ -222,6 +222,41 @@ function bindEvents(): void {
           true,
         )
       }
+    },
+    importLocalData: () => {
+      const input = document.createElement("input")
+      input.type = "file"
+      input.accept = "application/json,.json"
+      input.addEventListener("change", () => {
+        void (async () => {
+          const file = input.files?.[0]
+          if (file === undefined) return
+          try {
+            if (file.size > 50 * 1024 * 1024) {
+              throw new Error("Die Importdatei überschreitet die Grenze von 50 MiB.")
+            }
+            const parsed: unknown = JSON.parse(await file.text())
+            const data = validateLocalDataImport(parsed)
+            if (
+              !window.confirm(
+                `${file.name} enthält ${data.entries.length} lokale Datensätze. Einstellungen, Chat und Plugin-Daten werden ersetzt. Die Vorfallshistorie bleibt erhalten. Fortfahren?`,
+              )
+            ) {
+              return
+            }
+            await persistence.importLocalData(data)
+            window.location.reload()
+          } catch (error) {
+            showSaveFeedback(
+              error instanceof Error
+                ? error.message
+                : "Die Daten konnten nicht wiederhergestellt werden.",
+              true,
+            )
+          }
+        })()
+      })
+      input.click()
     },
   })
   bindResizer({

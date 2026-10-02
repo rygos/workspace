@@ -17,6 +17,55 @@ export type ApplicationDataExport = {
   readonly entries: readonly { readonly key: string; readonly value: unknown }[]
 }
 
+export function validateLocalDataImport(value: unknown): ApplicationDataExport {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Die Importdatei hat kein gültiges Workshop-Format.")
+  }
+  const candidate = value as Record<string, unknown>
+  if (
+    candidate["format"] !== "workshop-local-data" ||
+    candidate["version"] !== EXPORT_VERSION ||
+    typeof candidate["exportedAt"] !== "string" ||
+    !Number.isFinite(Date.parse(candidate["exportedAt"])) ||
+    !Array.isArray(candidate["entries"]) ||
+    candidate["entries"].length > 5_000
+  ) {
+    throw new Error(
+      "Die Importdatei hat kein gültiges Workshop-Format oder eine nicht unterstützte Version.",
+    )
+  }
+
+  const seen = new Set<string>()
+  const entries = candidate["entries"].map((entry): { key: string; value: unknown } => {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      throw new Error("Die Importdatei enthält einen ungültigen Datensatz.")
+    }
+    const record = entry as Record<string, unknown>
+    const key = record["key"]
+    if (typeof key !== "string" || !isExportableKey(key) || seen.has(key)) {
+      throw new Error("Die Importdatei enthält einen ungültigen oder doppelten Speicherschlüssel.")
+    }
+    seen.add(key)
+    return { key, value: record["value"] }
+  })
+  if (!seen.has(STATE_KEY)) {
+    throw new Error("Die Importdatei enthält keinen Anwendungszustand.")
+  }
+  const state = AppStateSchema.safeParse(entries.find(({ key }) => key === STATE_KEY)?.value)
+  if (!state.success) throw new Error("Der Anwendungszustand in der Importdatei ist ungültig.")
+
+  const normalized: ApplicationDataExport = {
+    format: "workshop-local-data",
+    version: EXPORT_VERSION,
+    exportedAt: candidate["exportedAt"],
+    entries,
+  }
+  if (new TextEncoder().encode(JSON.stringify(normalized)).byteLength > MAX_EXPORT_BYTES) {
+    throw new Error("Die Importdatei überschreitet die Grenze von 50 MiB.")
+  }
+  return normalized
+}
+
 export class Persistence {
   private readonly nativeStore: Promise<Store | null>
 
@@ -127,6 +176,50 @@ export class Persistence {
     return result
   }
 
+  async importLocalData(input: unknown): Promise<number> {
+    const data = validateLocalDataImport(input)
+    if (isTauri()) {
+      const store = await this.nativeStore
+      if (store === null) throw new Error("Der lokale Anwendungsspeicher ist nicht verfügbar.")
+      const previous = (await store.entries<unknown>()).filter(([key]) => isExportableKey(key))
+      try {
+        for (const [key] of previous) await store.delete(key)
+        for (const entry of data.entries) await store.set(entry.key, entry.value)
+        await store.save()
+      } catch (error) {
+        for (const [key] of await store.entries<unknown>()) {
+          if (isExportableKey(key)) await store.delete(key)
+        }
+        for (const [key, value] of previous) await store.set(key, value)
+        await store.save()
+        throw error
+      }
+      return data.entries.length
+    }
+
+    const previous = new Map<string, string>()
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index)
+      if (key === null || !isExportableKey(key)) continue
+      const value = window.localStorage.getItem(key)
+      if (value !== null) previous.set(key, value)
+    }
+    try {
+      for (const key of previous.keys()) window.localStorage.removeItem(key)
+      for (const entry of data.entries) {
+        window.localStorage.setItem(entry.key, JSON.stringify(entry.value))
+      }
+    } catch (error) {
+      for (let index = window.localStorage.length - 1; index >= 0; index -= 1) {
+        const key = window.localStorage.key(index)
+        if (key !== null && isExportableKey(key)) window.localStorage.removeItem(key)
+      }
+      for (const [key, value] of previous) window.localStorage.setItem(key, value)
+      throw error
+    }
+    return data.entries.length
+  }
+
   namespaced(pluginId: string): PluginStorage {
     if (!/^[a-z][a-z0-9-]{1,62}$/.test(pluginId)) {
       throw new Error("Ungültige Plugin-ID für den Speicherbereich.")
@@ -164,7 +257,10 @@ export class Persistence {
 
 function isExportableKey(key: string): boolean {
   return (
-    key === STATE_KEY || key === RECOVERY_KEY || key.startsWith("app:") || key.startsWith("plugin:")
+    key === STATE_KEY ||
+    key === RECOVERY_KEY ||
+    /^app:[a-z][a-z0-9-]{0,62}$/.test(key) ||
+    /^plugin:[a-z][a-z0-9-]{1,62}:[a-z][a-z0-9-]{0,62}$/.test(key)
   )
 }
 

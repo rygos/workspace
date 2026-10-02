@@ -28,3 +28,4 @@
 26. Plugin manifests with duplicate declarations, self-dependencies, or capability/event declarations without their required permission fail validation before activation; runtime facades still reject undeclared operations.
 27. Older application state missing fields introduced by newer releases migrates through safe defaults; invalid or newer incompatible state is preserved in a local recovery copy before defaults are returned, and later saves do not replace that copy.
 28. After direct confirmation, local export downloads a versioned JSON containing app state and namespaced app/plugin data, excludes session credentials, and rejects exports above 50 MiB.
+29. Local restore validates the complete versioned JSON and all keys before any write, requires direct confirmation, replaces only exported app/plugin namespaces, rolls back a failed write, and leaves the incident journal untouched.

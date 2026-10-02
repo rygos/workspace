@@ -17,6 +17,7 @@ export type ShellInteractionActions = {
   readonly selectWorkspace: () => Promise<void>
   readonly clearWorkspace: () => Promise<void>
   readonly exportLocalData: () => Promise<void>
+  readonly importLocalData: () => void
 }
 
 export function bindShellInteractions(actions: ShellInteractionActions): void {
@@ -99,6 +100,10 @@ export function bindShellInteractions(actions: ShellInteractionActions): void {
   requiredElement<HTMLButtonElement>("#data-export").addEventListener(
     "click",
     () => void actions.exportLocalData(),
+  )
+  requiredElement<HTMLButtonElement>("#data-import").addEventListener(
+    "click",
+    actions.importLocalData,
   )
 
   requiredElement<HTMLFormElement>("#chat-form").addEventListener("submit", (event) => {
