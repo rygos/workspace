@@ -226,8 +226,18 @@ export function mountShell(root: HTMLElement): void {
                   <option value="7200000">2 Stunden</option>
                 </select>
               </label>
+              <label class="field" for="setting-failure-cooldown">
+                <span>Quarantäne-Abklingzeit</span>
+                <select id="setting-failure-cooldown" name="pluginFailureCooldownMs">
+                  <option value="300000">5 Minuten</option>
+                  <option value="900000">15 Minuten</option>
+                  <option value="1800000">30 Minuten</option>
+                  <option value="3600000">1 Stunde</option>
+                  <option value="7200000">2 Stunden</option>
+                </select>
+              </label>
             </div>
-            <span class="field-hint">Gleiche Laufzeitfehler innerhalb dieses Fensters öffnen den Circuit Breaker für reguläre und Staging-Plugins.</span>
+            <span class="field-hint">Gleiche Laufzeitfehler innerhalb des Fensters öffnen den Circuit Breaker für reguläre und Staging-Plugins. Nach der Abklingzeit ist eine neue manuelle Aktivierung möglich.</span>
             <p class="phase-note">Die Unterhaltung ist aktiv. Änderungen an der Anwendung werden erst mit dem validierten Plugin-Workflow angewendet.</p>
           </section>
           <section class="settings-section" id="workspace-access-section" aria-labelledby="workspace-access-title" hidden>

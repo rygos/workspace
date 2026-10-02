@@ -27,6 +27,11 @@ export const SettingsSchema = z.object({
     .int()
     .refine((value) => [300_000, 900_000, 1_800_000, 3_600_000, 7_200_000].includes(value))
     .default(1_800_000),
+  pluginFailureCooldownMs: z
+    .number()
+    .int()
+    .refine((value) => [300_000, 900_000, 1_800_000, 3_600_000, 7_200_000].includes(value))
+    .default(1_800_000),
 })
 
 export type DevelopmentMode = z.infer<typeof DevelopmentModeSchema>
@@ -60,6 +65,7 @@ export const DEFAULT_SETTINGS = {
   stagedRepairAttemptLimit: 1,
   pluginFailureThreshold: 3,
   pluginFailureWindowMs: 1_800_000,
+  pluginFailureCooldownMs: 1_800_000,
 } satisfies Settings
 
 export const DEFAULT_APP_STATE = {

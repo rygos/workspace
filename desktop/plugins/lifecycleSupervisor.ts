@@ -6,19 +6,25 @@ import type { PluginStatus } from "./contracts"
 export type SupervisorPolicy = {
   readonly maxFailures: number
   readonly windowMs: number
+  readonly cooldownMs: number
 }
 
 const DEFAULT_POLICY: SupervisorPolicy = {
   maxFailures: 3,
   windowMs: 30 * 60 * 1000,
+  cooldownMs: 30 * 60 * 1000,
 }
 
 export function supervisorPolicyFromSettings(
-  settings: Pick<Settings, "pluginFailureThreshold" | "pluginFailureWindowMs">,
+  settings: Pick<
+    Settings,
+    "pluginFailureThreshold" | "pluginFailureWindowMs" | "pluginFailureCooldownMs"
+  >,
 ): SupervisorPolicy {
   return {
     maxFailures: settings.pluginFailureThreshold,
     windowMs: settings.pluginFailureWindowMs,
+    cooldownMs: settings.pluginFailureCooldownMs,
   }
 }
 
@@ -115,7 +121,7 @@ export class LifecycleSupervisor {
     )
     if (attempts.length < policy.maxFailures) return false
 
-    await this.journal.setQuarantined(pluginId, true)
+    await this.journal.setQuarantinedUntil(pluginId, this.now() + policy.cooldownMs)
     if (incident.status !== "quarantined") await this.journal.transition(incident.id, "quarantined")
     this.logger.error(
       "lifecycle-supervisor",

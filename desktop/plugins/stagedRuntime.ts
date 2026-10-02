@@ -25,7 +25,6 @@ export class StagedPluginRuntime {
   private state: StagedRuntimeState = { status: "inactive" }
   private readonly stateListeners = new Set<(state: StagedRuntimeState) => void>()
   private cancelObservation: (() => void) | undefined
-  private readonly quarantinedPluginIds = new Set<string>()
 
   constructor(
     private readonly mountPoint: HTMLElement,
@@ -162,16 +161,14 @@ export class StagedPluginRuntime {
   }
 
   async isQuarantined(pluginId: string): Promise<boolean> {
-    return this.quarantinedPluginIds.has(pluginId) || this.protection.isQuarantined(pluginId)
+    return this.protection.isQuarantined(pluginId)
   }
 
   async clearQuarantine(pluginId: string): Promise<void> {
     await this.protection.clearQuarantine(pluginId)
-    this.quarantinedPluginIds.delete(pluginId)
   }
 
   quarantine(pluginId: string): void {
-    this.quarantinedPluginIds.add(pluginId)
     if (
       this.active?.manifest.id === pluginId &&
       (this.state.status === "active" || this.state.status === "observing")

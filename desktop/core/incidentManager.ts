@@ -39,6 +39,7 @@ const JournalStateSchema = z.object({
   incidents: z.array(IncidentSchema).max(500),
   lastKnownGood: z.record(z.string(), z.string()),
   quarantined: z.array(z.string()).max(256),
+  quarantineUntil: z.record(z.string(), z.number().int().nonnegative()).default({}),
   safeMode: z.boolean(),
 })
 
@@ -66,6 +67,7 @@ const EMPTY_STATE = {
   incidents: [],
   lastKnownGood: {},
   quarantined: [],
+  quarantineUntil: {},
   safeMode: false,
 } satisfies z.infer<typeof JournalStateSchema>
 
@@ -73,7 +75,10 @@ export class IncidentJournal {
   private pending: Promise<void> = Promise.resolve()
   private readonly listeners = new Set<(incident: Incident) => void>()
 
-  constructor(private readonly storage: IncidentJournalStorage = createRuntimeStorage()) {}
+  constructor(
+    private readonly storage: IncidentJournalStorage = createRuntimeStorage(),
+    private readonly now: () => number = Date.now,
+  ) {}
 
   list(): Promise<readonly Incident[]> {
     return this.serialized(async () => (await this.readState()).incidents)
@@ -143,7 +148,20 @@ export class IncidentJournal {
   }
 
   quarantined(pluginId: string): Promise<boolean> {
-    return this.serialized(async () => (await this.readState()).quarantined.includes(pluginId))
+    return this.serialized(async () => {
+      const state = await this.readState()
+      const until = state.quarantineUntil[pluginId]
+      if (until === undefined || until > this.now()) return state.quarantined.includes(pluginId)
+
+      const quarantineUntil = { ...state.quarantineUntil }
+      delete quarantineUntil[pluginId]
+      await this.writeState({
+        ...state,
+        quarantined: state.quarantined.filter((candidate) => candidate !== pluginId),
+        quarantineUntil,
+      })
+      return false
+    })
   }
 
   setQuarantined(pluginId: string, quarantined: boolean): Promise<void> {
@@ -152,7 +170,22 @@ export class IncidentJournal {
       const current = new Set(state.quarantined)
       if (quarantined) current.add(pluginId)
       else current.delete(pluginId)
-      await this.writeState({ ...state, quarantined: [...current] })
+      const quarantineUntil = { ...state.quarantineUntil }
+      delete quarantineUntil[pluginId]
+      await this.writeState({ ...state, quarantined: [...current], quarantineUntil })
+    })
+  }
+
+  setQuarantinedUntil(pluginId: string, until: number): Promise<void> {
+    return this.serialized(async () => {
+      const state = await this.readState()
+      const quarantined = new Set(state.quarantined)
+      quarantined.add(pluginId)
+      await this.writeState({
+        ...state,
+        quarantined: [...quarantined],
+        quarantineUntil: { ...state.quarantineUntil, [pluginId]: until },
+      })
     })
   }
 

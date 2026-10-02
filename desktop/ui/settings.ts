@@ -40,6 +40,9 @@ export function populateSettings(
     settings.pluginFailureThreshold,
   )
   field<HTMLSelectElement>("#setting-failure-window").value = String(settings.pluginFailureWindowMs)
+  field<HTMLSelectElement>("#setting-failure-cooldown").value = String(
+    settings.pluginFailureCooldownMs,
+  )
 
   updateAvailableModels(models)
   updateTemperatureLabel()
@@ -59,6 +62,7 @@ export function readSettingsForm():
     stagedRepairAttemptLimit: Number(data.get("stagedRepairAttemptLimit")),
     pluginFailureThreshold: Number(data.get("pluginFailureThreshold")),
     pluginFailureWindowMs: Number(data.get("pluginFailureWindowMs")),
+    pluginFailureCooldownMs: Number(data.get("pluginFailureCooldownMs")),
   })
 
   if (!parsed.success) {
