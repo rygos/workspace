@@ -164,6 +164,24 @@ export class IncidentJournal {
     })
   }
 
+  quarantineExpiresAt(pluginId: string): Promise<number | undefined> {
+    return this.serialized(async () => {
+      const state = await this.readState()
+      const until = state.quarantineUntil[pluginId]
+      if (until === undefined) return undefined
+      if (until > this.now()) return state.quarantined.includes(pluginId) ? until : undefined
+
+      const quarantineUntil = { ...state.quarantineUntil }
+      delete quarantineUntil[pluginId]
+      await this.writeState({
+        ...state,
+        quarantined: state.quarantined.filter((candidate) => candidate !== pluginId),
+        quarantineUntil,
+      })
+      return undefined
+    })
+  }
+
   setQuarantined(pluginId: string, quarantined: boolean): Promise<void> {
     return this.serialized(async () => {
       const state = await this.readState()

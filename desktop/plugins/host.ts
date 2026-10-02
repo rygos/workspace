@@ -15,7 +15,9 @@ export type PluginOverview = {
   readonly manifest: PluginManifest
   readonly status: PluginStatus
   readonly lastKnownGoodVersion: string | undefined
+  readonly lastKnownGoodAvailable: boolean
   readonly quarantined: boolean
+  readonly quarantineExpiresAt: number | undefined
 }
 
 export type PluginHostOptions = {
@@ -90,12 +92,22 @@ export class WorkshopPluginHost {
 
   async list(): Promise<readonly PluginOverview[]> {
     return Promise.all(
-      [...this.definitions].map(async ([pluginId, definition]) => ({
-        manifest: definition.manifest,
-        status: this.runtime.status(pluginId) ?? "discovered",
-        lastKnownGoodVersion: await this.options.incidents.lastKnownGood(pluginId),
-        quarantined: await this.options.incidents.quarantined(pluginId),
-      })),
+      [...this.definitions].map(async ([pluginId, definition]) => {
+        const [lastKnownGoodVersion, quarantined, quarantineExpiresAt] = await Promise.all([
+          this.options.incidents.lastKnownGood(pluginId),
+          this.options.incidents.quarantined(pluginId),
+          this.options.incidents.quarantineExpiresAt(pluginId),
+        ])
+        const runtimeStatus = this.runtime.status(pluginId) ?? "discovered"
+        return {
+          manifest: definition.manifest,
+          status: runtimeStatus === "quarantined" && !quarantined ? "disabled" : runtimeStatus,
+          lastKnownGoodVersion,
+          lastKnownGoodAvailable: lastKnownGoodVersion === definition.manifest.version,
+          quarantined,
+          quarantineExpiresAt,
+        }
+      }),
     )
   }
 
@@ -112,6 +124,10 @@ export class WorkshopPluginHost {
   }
 
   async restoreLastKnownGood(pluginId: string): Promise<boolean> {
+    const version = await this.options.incidents.lastKnownGood(pluginId)
+    const definition = this.requireDefinition(pluginId)
+    if (version === undefined || definition.manifest.version !== version) return false
+
     const currentStatus = this.runtime.status(pluginId)
     if (currentStatus === "active") {
       const status = await this.runtime.deactivate(pluginId)

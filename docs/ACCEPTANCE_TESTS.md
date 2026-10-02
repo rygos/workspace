@@ -13,7 +13,7 @@
 11. Successful repair creates regression validation, passes gates and hot reloads.
 12. Immediate recurrence causes failed candidate to be withdrawn.
 13. The configured number of matching runtime failures within the configured window triggers the shared lifecycle circuit breaker for trusted and staged plugins. For staged plugins it quarantines the plugin, stops its active runtime and blocks activation and repair canaries. Below the threshold, same-plugin Hot Reload failure restores the previous runtime where available; when the breaker opens, the plugin remains stopped. Quarantine expires after the configured cooldown and never activates the plugin automatically; any activation still requires direct confirmation.
-14. Last Known Good state can be restored.
+14. Last Known Good state can be restored only after direct confirmation; an unavailable version is shown and must not deactivate the currently running plugin.
 15. Restart after bad activation enters a recoverable state rather than a crash loop.
 16. Capability-breaking change triggers tests for known consumers.
 17. Agent cannot write outside approved workspace/staging paths through normal tools.
@@ -23,3 +23,4 @@
 21. Hot Reload accepts only the same plugin ID. A candidate is started in a hidden sandbox with transactional storage; after its startup succeeds, the new frame replaces the active frame without restarting Workshop. If candidate startup fails, the previous frame and its stored state remain active. If the replacement later reports a runtime failure, its frame is stopped, its storage changes are rolled back, and the previous version is loaded again automatically.
 22. After activation or Hot Reload, the runtime reports a 10-second observation period. Hot Reload remains unavailable during that period; a runtime failure restores the prior version and storage, while a candidate that survives is accepted and its rollback snapshot is released.
 23. A user can install a statically accepted artifact after direct confirmation. Its manifest and bounded entrypoint remain in local app storage if the staging copy is removed. Restarting does not execute installed code; each activation revalidates the saved artifact and asks for direct confirmation. Removing an installation also requires confirmation and is blocked while that plugin is active.
+24. The trusted-plugin manager shows quarantine and its expiry, distinguishes an available Last Known Good version from a missing one, and asks for direct confirmation before activation, deactivation, marking healthy or restoring. When cooldown expires, the plugin is shown as available for manual activation without starting automatically.

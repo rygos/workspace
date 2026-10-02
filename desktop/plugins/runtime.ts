@@ -62,6 +62,14 @@ export class PluginRuntime<Contracts extends object, Event extends WorkshopEvent
     if (!parsed.success) throw new Error("Das Plugin-Manifest ist ungültig.")
     const manifest = Object.freeze(parsed.data)
     const existing = this.plugins.get(manifest.id)
+    const blocked = await this.supervisor?.blockedStatus(manifest.id)
+    if (blocked === "disabled" || (blocked === "quarantined" && !allowQuarantined)) {
+      this.plugins.set(manifest.id, { manifest, status: blocked, cleanup: undefined })
+      return blocked
+    }
+    if (existing?.status === "quarantined" && blocked === undefined) {
+      existing.status = "disabled"
+    }
     const canRecoverQuarantined = allowQuarantined && existing?.status === "quarantined"
     if (
       existing !== undefined &&
@@ -70,11 +78,6 @@ export class PluginRuntime<Contracts extends object, Event extends WorkshopEvent
       !canRecoverQuarantined
     ) {
       throw new Error(`Plugin ist bereits geladen: ${manifest.id}`)
-    }
-    const blocked = await this.supervisor?.blockedStatus(manifest.id)
-    if (blocked === "disabled" || (blocked === "quarantined" && !allowQuarantined)) {
-      this.plugins.set(manifest.id, { manifest, status: blocked, cleanup: undefined })
-      return blocked
     }
     for (const dependency of manifest.dependencies) {
       const active = this.plugins.get(dependency.id)

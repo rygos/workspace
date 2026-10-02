@@ -58,7 +58,10 @@ const repairAgent = new RepairAgent({
     invoke<unknown>("validate_staging_copy", { id: stageId, gates: ["test"] }),
   activateStagedRepairCanary: (stageId, pluginId, version) =>
     pluginPreview.activateRepairCanary(stageId, pluginId, version),
-  onUpdate: () => void incidentHistory.refresh(),
+  onUpdate: () => {
+    void incidentHistory.refresh()
+    void pluginManager.refresh()
+  },
 })
 repairAgent.start()
 repairAgent.watchStagedRuntime(stagedPluginRuntime)

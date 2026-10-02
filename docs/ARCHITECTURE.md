@@ -29,7 +29,7 @@ LLM responses and plugin artifacts are untrusted input. The model receives named
 
 Provider preferences, chat history, plugin manifests, capability edges, incidents, validation results, activation pointers and version metadata are local application data. SQLite is the planned durable store behind an interface; plugin data is namespaced and migrations are versioned. A staging artifact is not active until its manifest, permissions, fixed entrypoint contract and sandbox startup are accepted. Hot Reload keeps the prior frame available for rollback through a 10-second post-start observation period, then accepts the candidate and releases its recovery snapshot. Users can retain an accepted staging artifact in the local application catalog; activation is revalidated and confirmed each time, and startup never executes installed staged code automatically.
 
-The lifecycle supervisor reads its matching-failure threshold, time window and cooldown from persisted settings. Both trusted and staged runtime failures use the same fingerprint-based breaker; staged plugins are stopped and blocked from activation while quarantined. Cooldown expiry clears persisted quarantine but does not start plugin code. Trusted-plugin UI recovery remains future work.
+The lifecycle supervisor reads its matching-failure threshold, time window and cooldown from persisted settings. Both trusted and staged runtime failures use the same fingerprint-based breaker; staged plugins are stopped and blocked from activation while quarantined. Cooldown expiry clears persisted quarantine but does not start plugin code. The trusted-plugin manager exposes confirmed manual activation and Last Known Good restore with availability state; automatic recovery workflows remain future work.
 
 ## ADRs
 
