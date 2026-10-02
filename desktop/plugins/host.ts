@@ -4,6 +4,7 @@ import type { PluginStorageApi } from "../core/persistence"
 import { CapabilityRegistry } from "./capabilityRegistry"
 import type { PluginManifest, PluginStatus } from "./contracts"
 import type { DemoCapabilities, DemoEvent, NotesService } from "./demoNotes"
+import { analyzePluginDependencies } from "./dependencyAnalysis"
 import { EventBus } from "./eventBus"
 import type { SupervisorPolicy } from "./lifecycleSupervisor"
 import { LifecycleSupervisor } from "./lifecycleSupervisor"
@@ -149,7 +150,12 @@ export class WorkshopPluginHost {
   }
 
   dependencyGraph() {
-    return this.capabilities.dependencyGraph()
+    return {
+      runtimeCapabilities: this.capabilities.dependencyGraph(),
+      declared: analyzePluginDependencies(
+        [...this.definitions.values()].map(({ manifest }) => manifest),
+      ),
+    }
   }
 
   diagnosticSourceContext(pluginId: string): string | undefined {

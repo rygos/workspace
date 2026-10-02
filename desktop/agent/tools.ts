@@ -43,7 +43,8 @@ export class ReadOnlyAgentTools implements AgentToolBridge {
       type: "function",
       function: {
         name: "inspect_capabilities",
-        description: "Zeigt die aktuell verwendeten Erweiterungsabhängigkeiten.",
+        description:
+          "Zeigt Laufzeit- und deklarierte Erweiterungsabhängigkeiten sowie fehlende Versionen und Zyklen.",
         parameters: NO_ARGUMENTS,
       },
     },
