@@ -32,3 +32,5 @@
 30. `bun run test:e2e` launches an isolated Vite instance and verifies that the workspace and chat shell render, settings persist across reload, and an unavailable local model leaves the workspace and Settings usable.
 31. The Playwright data recovery flow exports a session without its API key, changes a setting, restores the export after direct confirmation and observes the original setting after reload.
 32. The Playwright restore flow rejects an unsupported export version before confirmation and leaves current app settings unchanged.
+33. The Playwright restore flow simulates a one-time storage write failure, surfaces the error, rolls back prior values and retains the pre-import setting after reload.
+34. The Linux Tauri debug executable builds and remains running for at least 15 seconds after launch without a startup crash; native UI interaction must be verified separately.

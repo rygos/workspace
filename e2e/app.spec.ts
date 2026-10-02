@@ -97,3 +97,47 @@ test("an unsupported import is rejected without replacing the current settings",
   await expect(settings.locator("#save-feedback")).toContainText("nicht unterstützte Version")
   await expect(settings.locator("#setting-mode")).toHaveValue("normal")
 })
+
+test("a failed storage write rolls back the previous data", async ({ page }) => {
+  await page.addInitScript(() => {
+    const originalSetItem = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "app-state" && localStorage.getItem("e2e-fail-once") === "1") {
+        localStorage.removeItem("e2e-fail-once")
+        throw new DOMException("Simulated storage write failure", "QuotaExceededError")
+      }
+      originalSetItem.call(this, key, value)
+    }
+  })
+  await page.route("**/__workshop_lmstudio/v1/models", (route) =>
+    route.fulfill({ json: { data: [{ id: "e2e-local-model" }] } }),
+  )
+  await page.goto("/")
+  await page.getByRole("button", { name: "Einstellungen", exact: true }).click()
+  const settings = page.getByRole("dialog", { name: "Einstellungen" })
+  await settings.locator("#setting-mode").selectOption("safe")
+  await settings.getByRole("button", { name: "Einstellungen speichern" }).click()
+  await expect(settings.locator("#save-feedback")).toHaveText("Gespeichert.")
+
+  page.once("dialog", (dialog) => dialog.accept())
+  const downloadPromise = page.waitForEvent("download")
+  await settings.getByRole("button", { name: "Daten exportieren" }).click()
+  const download = await downloadPromise
+  await settings.locator("#setting-mode").selectOption("normal")
+  await settings.getByRole("button", { name: "Einstellungen speichern" }).click()
+  await expect(settings.locator("#save-feedback")).toHaveText("Gespeichert.")
+
+  await page.evaluate(() => localStorage.setItem("e2e-fail-once", "1"))
+  const fileChooserPromise = page.waitForEvent("filechooser")
+  await settings.getByRole("button", { name: "Daten wiederherstellen" }).click()
+  const fileChooser = await fileChooserPromise
+  page.once("dialog", (dialog) => dialog.accept())
+  await fileChooser.setFiles(await download.path())
+  await expect(settings.locator("#save-feedback")).toContainText("Simulated storage write failure")
+
+  await page.reload()
+  await page.getByRole("button", { name: "Einstellungen", exact: true }).click()
+  await expect(page.getByRole("dialog", { name: "Einstellungen" }).locator("#setting-mode")).toHaveValue(
+    "normal",
+  )
+})
