@@ -16,6 +16,12 @@ export type RepairAgentOptions = {
   readonly getTrustedPluginSourceContext: (pluginId: string) => string | undefined
   readonly hasWorkspace: () => boolean
   readonly validateStagedPlugin: (stageId: string) => Promise<unknown>
+  readonly runStagedRegressionTests: (stageId: string) => Promise<unknown>
+  readonly activateStagedRepairCanary: (
+    stageId: string,
+    pluginId: string,
+    version: string,
+  ) => Promise<"passed" | "failed" | "cancelled" | "busy">
   readonly onUpdate: () => void
 }
 
@@ -23,6 +29,7 @@ export class RepairAgent {
   private unsubscribe: (() => void) | undefined
   private unsubscribeStagedFailures: (() => void) | undefined
   private readonly stagedRepairer: StagedPluginRepairer
+  private readonly stagedRepairAttempts = new Set<string>()
 
   constructor(private readonly options: RepairAgentOptions) {
     this.stagedRepairer = new StagedPluginRepairer({
@@ -30,6 +37,8 @@ export class RepairAgent {
       getApiKey: options.getApiKey,
       hasWorkspace: options.hasWorkspace,
       validate: options.validateStagedPlugin,
+      runRegressionTests: options.runStagedRegressionTests,
+      activateRepairCanary: options.activateStagedRepairCanary,
     })
   }
 
@@ -98,23 +107,69 @@ export class RepairAgent {
     incident: Incident,
     failure: StagedPluginRuntimeFailure,
   ): Promise<void> {
+    if (this.stagedRepairAttempts.has(failure.pluginId)) {
+      await this.options.incidents.updateRepairState(
+        incident.id,
+        "repair_unavailable",
+        "Das Reparaturlimit für dieses Plugin in dieser App-Sitzung ist erreicht.",
+      )
+      this.options.onUpdate()
+      return
+    }
+    this.stagedRepairAttempts.add(failure.pluginId)
     await this.options.incidents.updateRepairState(incident.id, "repairing")
     this.options.onUpdate()
     try {
       const result = await this.stagedRepairer.repair(incident, failure, this.options.getSettings())
+      if (result.status === "unavailable") this.stagedRepairAttempts.delete(failure.pluginId)
       switch (result.status) {
         case "staged":
           await this.options.incidents.updateRepairState(
             incident.id,
             "staged",
-            "Ein bestätigter Einzelaustausch wurde in Staging übernommen und statisch geprüft. Das Plugin wurde nicht aktiviert.",
+            "Ein bestätigter Einzelaustausch wurde statisch geprüft und der Regressionstest war erfolgreich. Das Plugin bleibt in Staging und wurde nicht aktiviert.",
           )
           break
-        case "cancelled":
+        case "canary_passed":
+          await this.options.incidents.updateRepairState(
+            incident.id,
+            "canary_passed",
+            "Die bestätigte Reparatur bestand statische Prüfung, Regressionstest und die zehnsekündige Sandbox-Beobachtung.",
+          )
+          break
+        case "canary_failed":
+          await this.options.incidents.updateRepairState(
+            incident.id,
+            "canary_failed",
+            "Die Reparatur bestand ihre Canary-Beobachtung nicht. Ein weiterer automatischer Reparaturversuch ist in dieser App-Sitzung gesperrt.",
+          )
+          break
+        case "canary_cancelled":
+          await this.options.incidents.updateRepairState(
+            incident.id,
+            "repair_canary_cancelled",
+            "Die Reparatur blieb in Staging; der Canary wurde nicht gestartet.",
+          )
+          break
+        case "canary_busy":
+          await this.options.incidents.updateRepairState(
+            incident.id,
+            "repair_canary_busy",
+            "Canary nicht gestartet, weil eine andere Plugin-Laufzeit aktiv oder im Wechsel war.",
+          )
+          break
+        case "edit_cancelled":
           await this.options.incidents.updateRepairState(
             incident.id,
             "repair_cancelled",
             "Der Reparaturvorschlag wurde nicht angewendet.",
+          )
+          break
+        case "tests_cancelled":
+          await this.options.incidents.updateRepairState(
+            incident.id,
+            "repair_test_cancelled",
+            "Der Patch liegt in Staging, wurde aber nicht durch Regressionstests validiert.",
           )
           break
         case "unavailable":

@@ -5,6 +5,7 @@ import { PluginManifestSchema } from "../plugins/contracts"
 import type { StagedPluginCatalog } from "../plugins/installedCatalog"
 import { SandboxedPluginFrame } from "../plugins/sandbox"
 import type { StagedPluginRuntime } from "../plugins/stagedRuntime"
+import type { StagedRuntimeState } from "../plugins/stagedRuntimeTypes"
 import type { PluginArtifactValidation } from "../plugins/stagingArtifact"
 import { validateStagingArtifact } from "../plugins/stagingArtifact"
 
@@ -35,6 +36,8 @@ const PreviewStatusSchema = z.object({
 export type PluginPreviewStatus = z.infer<typeof PreviewStatusSchema>
 
 export type { PluginArtifactValidation } from "../plugins/stagingArtifact"
+
+export type RepairCanaryResult = "passed" | "failed" | "cancelled" | "busy"
 
 export class PluginPreviewView {
   private readonly section = requiredElement<HTMLElement>("#staging-plugin-section")
@@ -147,6 +150,94 @@ export class PluginPreviewView {
   async validateStagingPlugin(id: string): Promise<PluginArtifactValidation> {
     const artifact = ArtifactSchema.parse(await invoke<unknown>("load_staging_plugin", { id }))
     return validateStagingArtifact(id, artifact)
+  }
+
+  async activateRepairCanary(
+    stageId: string,
+    expectedPluginId: string,
+    expectedVersion: string,
+  ): Promise<RepairCanaryResult> {
+    if (!isTauri() || !this.hasWorkspace()) return "failed"
+    if (!/^stage-\d+-\d+$/.test(stageId)) return "failed"
+    try {
+      const report = await this.validateStagingPlugin(stageId)
+      this.renderChecks(report)
+      if (!report.passed) {
+        this.feedback.textContent = "Canary abgebrochen: statische Akzeptanzprüfung fehlgeschlagen."
+        return "failed"
+      }
+      const artifact = ArtifactSchema.parse(
+        await invoke<unknown>("load_staging_plugin", { id: stageId }),
+      )
+      const manifest = PluginManifestSchema.parse(JSON.parse(artifact.manifest) as unknown)
+      if (manifest.id !== expectedPluginId || manifest.version !== expectedVersion) {
+        this.feedback.textContent =
+          "Canary abgebrochen: Plugin-Identität oder Version hat sich geändert."
+        return "failed"
+      }
+      if (
+        !window.confirm(
+          `Reparatur-Canary für ${manifest.name} (${manifest.id}@${manifest.version}) starten?\n\nBerechtigungen: ${manifest.permissions.join(", ") || "keine"}. Der Code läuft isoliert in der Sandbox. Workshop beobachtet ihn 10 Sekunden; bei Hot Reload wird die vorherige Version bei einem Laufzeitfehler wiederhergestellt.`,
+        )
+      ) {
+        this.feedback.textContent = "Reparatur-Canary abgebrochen."
+        return "cancelled"
+      }
+
+      let active = this.runtime.status
+      if (active.status === "observing") {
+        if (active.pluginId !== manifest.id) return "busy"
+        const settled = await this.waitForStageState(active.stageId)
+        if (settled === undefined) return "busy"
+        active = settled
+      }
+      if (["starting", "reloading", "recovering"].includes(active.status)) return "busy"
+      if (active.status === "active") {
+        if (active.pluginId !== manifest.id) return "busy"
+        await this.runtime.hotReload(stageId, manifest, artifact.entrypoint)
+      } else if (active.status === "inactive" || active.status === "failed") {
+        await this.runtime.activate(stageId, manifest, artifact.entrypoint)
+      } else {
+        return "busy"
+      }
+      this.feedback.textContent =
+        "Reparatur-Canary gestartet; die 10-sekündige Beobachtungsphase läuft."
+      const result = await this.waitForStageState(stageId)
+      if (result?.status === "active") {
+        this.feedback.textContent =
+          "Reparatur-Canary bestanden; die Beobachtungsphase war fehlerfrei."
+        return "passed"
+      }
+      this.feedback.textContent =
+        "Reparatur-Canary fehlgeschlagen; Laufzeitfehler wurden verarbeitet."
+      return "failed"
+    } catch {
+      this.feedback.textContent = "Reparatur-Canary konnte nicht sicher aktiviert werden."
+      return "failed"
+    }
+  }
+
+  private waitForStageState(stageId: string | undefined): Promise<StagedRuntimeState | undefined> {
+    return new Promise((resolve) => {
+      let unsubscribe: (() => void) | undefined
+      let settled = false
+      const finish = (state: StagedRuntimeState | undefined): void => {
+        if (settled) return
+        settled = true
+        clearTimeout(timeout)
+        unsubscribe?.()
+        resolve(state)
+      }
+      const timeout = globalThis.setTimeout(() => finish(undefined), 15_000)
+      unsubscribe = this.runtime.subscribe((state) => {
+        if (state.stageId !== stageId) {
+          if (state.status === "inactive" || state.status === "failed") finish(state)
+          return
+        }
+        if (state.status === "active" || state.status === "failed") finish(state)
+      })
+      if (settled) unsubscribe()
+    })
   }
 
   private async validateSelected(): Promise<void> {

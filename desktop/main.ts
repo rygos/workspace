@@ -54,6 +54,10 @@ const repairAgent = new RepairAgent({
   getTrustedPluginSourceContext: (pluginId) => pluginHost.diagnosticSourceContext(pluginId),
   hasWorkspace: () => state.workspaceRoot !== null,
   validateStagedPlugin: (stageId) => pluginPreview.validateStagingPlugin(stageId),
+  runStagedRegressionTests: (stageId) =>
+    invoke<unknown>("validate_staging_copy", { id: stageId, gates: ["test"] }),
+  activateStagedRepairCanary: (stageId, pluginId, version) =>
+    pluginPreview.activateRepairCanary(stageId, pluginId, version),
   onUpdate: () => void incidentHistory.refresh(),
 })
 repairAgent.start()

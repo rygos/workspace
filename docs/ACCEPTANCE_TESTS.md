@@ -9,7 +9,7 @@
 7. Plugin UI render exception is contained; Core/chat stay alive.
 8. Plugin event-handler exception is contained and incident is captured.
 9. A new trusted-plugin incident or active staged-plugin runtime failure automatically starts a local AI diagnosis and records its bounded summary in incident history; any trusted activation function or staged entrypoint source context is redacted, capped and not persisted.
-10. After a staged-plugin runtime incident, repair may apply at most one exact `plugin.js` replacement to its originating staging copy after direct confirmation; the artifact must pass static acceptance checks and must not activate automatically. Cancellation or validation failure leaves the failed runtime stopped.
+10. After a staged-plugin runtime incident, repair may apply at most one exact `plugin.js` replacement to its originating staging copy after direct confirmation; the artifact must pass static acceptance checks and a separately confirmed `bun test` gate before a separately confirmed isolated canary. The repair passes only after ten seconds of observation. Same-plugin Hot Reload must retain rollback during observation. Cancellation, runtime failure or validation failure is recorded; another automatic repair attempt for that plugin in the same app session is blocked.
 11. Successful repair creates regression validation, passes gates and hot reloads.
 12. Immediate recurrence causes failed candidate to be withdrawn.
 13. Repeated unrepairable error hits retry limit/circuit breaker and quarantines or rolls back plugin.

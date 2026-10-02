@@ -43,9 +43,19 @@ function repairStatusLabel(status: NonNullable<Incident["repair"]>["status"]): s
     case "repairing":
       return "Begrenzte Staging-Reparatur läuft"
     case "staged":
-      return "Staging-Reparatur angewendet und statisch geprüft"
+      return "Staging-Reparatur geprüft; Canary nicht abgeschlossen"
+    case "canary_passed":
+      return "Reparatur-Canary bestanden"
+    case "canary_failed":
+      return "Reparatur-Canary fehlgeschlagen"
+    case "repair_canary_cancelled":
+      return "Reparatur-Canary abgebrochen"
+    case "repair_canary_busy":
+      return "Reparatur-Canary wegen Laufzeitwechsel nicht gestartet"
     case "repair_cancelled":
       return "Staging-Reparatur abgebrochen"
+    case "repair_test_cancelled":
+      return "Reparatur in Staging; Regressionstest nicht ausgeführt"
     case "repair_unavailable":
       return "Staging-Reparatur nicht verfügbar"
     case "repair_failed":
