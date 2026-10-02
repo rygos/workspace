@@ -10,6 +10,11 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "withGlobalTauri": false,
+    "security": {
+      "capabilities": ["default"],
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost http://127.0.0.1:1234 http://localhost:1234; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; script-src 'self' blob: 'sha256-1lMgAEGlMecH2FqS/rdFgmIx2cK5Zr+vDZrdy4alWd4='; frame-src 'self' blob:"
+    },
     "windows": [
       {
         "title": "Workshop",
@@ -20,10 +25,7 @@
         "center": true,
         "resizable": true
       }
-    ],
-    "security": {
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost http://127.0.0.1:1234 http://localhost:1234; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; script-src 'self' blob: 'sha256-1lMgAEGlMecH2FqS/rdFgmIx2cK5Zr+vDZrdy4alWd4='; frame-src 'self' blob:"
-    }
+    ]
   },
   "plugins": {
     "http": {

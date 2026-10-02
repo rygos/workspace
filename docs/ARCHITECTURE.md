@@ -4,6 +4,8 @@
 
 Workshop uses Tauri 2 with a Vite and TypeScript frontend. Tauri provides a small native shell while keeping nearly all product code in the required TypeScript/JavaScript runtime. Node 22, Rust, GTK 3, WebKitGTK 4.1, and Chromium are available in the current Linux workspace. Official Tauri prerequisites document desktop support across Linux, macOS, and Windows; release packaging still needs native builds or CI runners for each target.
 
+Native Linux WebDriver smoke uses a dedicated Cargo feature, Tauri config and application identifier, and verifies Settings interaction against the real WebView. Standard release configuration does not enable its test permissions.
+
 The initial UI avoids a framework and remote assets. Its small DOM surface can be implemented with semantic HTML, strict TypeScript, and design tokens without hydration or a client-framework runtime.
 
 ## Current implementation boundary

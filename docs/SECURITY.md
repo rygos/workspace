@@ -12,6 +12,8 @@ Restore accepts only this versioned format, at most 5,000 entries and 50 MiB, an
 
 Desktop installers are built in GitHub Actions for Linux, Windows and both macOS architectures. The workflow has read-only repository access plus artifact-write access, uploads build artifacts for inspection and does not create or publish releases. Platform signing and notarization are not configured yet.
 
+Native WebDriver testing is a test-only build. It requires the explicit `wdio` Cargo feature and dedicated Tauri config, which uses a separate application identifier and adds the WebDriver permissions only to that test binary. Standard builds select only the default capability and do not compile or register the test plugin unless the feature is explicitly requested.
+
 Use explicit permissions for filesystem, network, clipboard, notifications, database, process execution and other sensitive capabilities. The agent also has scoped tool permissions. Avoid unrestricted shell access. Validate tool arguments and paths and prevent traversal outside allowed project/staging areas.
 
 Dependencies introduced by the agent must be visible and policy checked. Avoid unnecessary dependencies. Never send project data to cloud AI implicitly; LM Studio/local OpenAI-compatible provider is the default.

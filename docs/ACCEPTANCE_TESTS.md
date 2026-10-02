@@ -33,5 +33,6 @@
 31. The Playwright data recovery flow exports a session without its API key, changes a setting, restores the export after direct confirmation and observes the original setting after reload.
 32. The Playwright restore flow rejects an unsupported export version before confirmation and leaves current app settings unchanged.
 33. The Playwright restore flow simulates a one-time storage write failure, surfaces the error, rolls back prior values and retains the pre-import setting after reload.
-34. The Linux Tauri debug executable builds and remains running for at least 15 seconds after launch without a startup crash; native UI interaction must be verified separately.
+34. The Linux Tauri debug executable builds and remains running for at least 15 seconds after launch without a startup crash; native UI interaction is verified separately by test 36.
 35. The desktop packaging workflow builds uploadable Linux `.deb`, Windows `.msi`, and Apple Silicon/Intel macOS `.dmg` artifacts on their native runners without creating a release.
+36. `bun run test:tauri:e2e` builds an isolated native test app and uses WebDriver against its actual WebView to open Settings, change the development mode, save it and observe the success feedback.

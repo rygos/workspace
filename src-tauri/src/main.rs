@@ -10,12 +10,20 @@ use workspace::{
 };
 
 fn main() {
-    let result = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .manage(WorkspaceAccess::default())
         .manage(StagingSequence::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_store::Builder::new().build());
+
+    #[cfg(feature = "wdio")]
+    let builder = builder.plugin(tauri_plugin_wdio::init());
+
+    #[cfg(all(debug_assertions, feature = "wdio"))]
+    let builder = builder.plugin(tauri_plugin_wdio_webdriver::init());
+
+    let result = builder
         .invoke_handler(tauri::generate_handler![
             set_workspace_root,
             clear_workspace_root,

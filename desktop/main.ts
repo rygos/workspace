@@ -24,6 +24,10 @@ import { bindShellInteractions } from "./ui/shellInteractions"
 import { WorkspaceAccess } from "./ui/workspaceAccess"
 import "./styles/app.css"
 
+if (import.meta.env.VITE_TAURI_WDIO === "true") {
+  void import("@wdio/tauri-plugin")
+}
+
 const root = document.querySelector<HTMLElement>("#app")
 if (root === null) throw new Error("Der Anwendungsbereich fehlt.")
 

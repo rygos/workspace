@@ -5,6 +5,9 @@ description = "Privater, erweiterbarer Arbeitsbereich mit lokalem KI-Chat"
 authors = ["Workshop"]
 edition = "2021"
 
+[features]
+wdio = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -14,3 +17,5 @@ tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-store = "2"
 serde_json = "1"
+tauri-plugin-wdio = { version = "1", optional = true }
+tauri-plugin-wdio-webdriver = { version = "1", optional = true }
